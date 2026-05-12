@@ -1,0 +1,627 @@
+﻿import { useState, useEffect, useRef } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { open } from "@tauri-apps/plugin-dialog";
+import { listen, UnlistenFn } from "@tauri-apps/api/event";
+
+interface ProjectCard {
+  id: string;
+  name: string;
+  sourcePath: string;
+  targetPath: string;
+  autoPull: boolean;
+  moveMode: "copy" | "cut";
+  clearTarget: boolean;
+  commitMode: "auto" | "manual" | "none";
+  status: "idle" | "copying" | "ready" | "committing" | "done" | "error";
+  message: string;
+  progress: number;
+}
+
+interface AppConfig {
+  version?: string;
+  updatedAt?: string;
+  exportedAt?: string;
+  projects: ProjectCard[];
+}
+
+interface CopyProgress {
+  current: number;
+  total: number;
+  currentFile: string;
+  cardId: string;
+}
+
+interface ImportedProject {
+  name?: string;
+  sourcePath?: string;
+  targetPath?: string;
+  autoPull?: boolean;
+  autoCommit?: boolean;
+  moveMode?: "copy" | "cut";
+  clearTarget?: boolean;
+  commitMode?: "auto" | "manual" | "none";
+}
+
+function generateId(): string {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
+function App() {
+  const [cards, setCards] = useState<ProjectCard[]>([]);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showManualCommitModal, setShowManualCommitModal] = useState(false);
+  const [pendingCommit, setPendingCommit] = useState<{ card: ProjectCard; commitMessage: string } | null>(null);
+  const [gitOutput, setGitOutput] = useState<string>("");
+  const unlistenersRef = useRef<UnlistenFn[]>([]);
+
+  useEffect(() => {
+    loadConfig();
+    return () => {
+      unlistenersRef.current.forEach((fn) => fn());
+    };
+  }, []);
+
+  useEffect(() => {
+    unlistenersRef.current.forEach((fn) => fn());
+    unlistenersRef.current = [];
+
+    const unlistenProgress = listen<CopyProgress>("copy-progress", (event) => {
+      const { current, total, currentFile, cardId } = event.payload;
+      const progress = total > 0 ? (current / total) * 100 : 0;
+
+      setCards((prev) =>
+        prev.map((card) =>
+          card.id === cardId
+            ? { ...card, progress, message: `正在复制: ${currentFile}` }
+            : card
+        )
+      );
+    });
+    unlistenProgress.then((fn) => unlistenersRef.current.push(fn));
+
+    const unlistenGitOutput = listen<string>("git-output", (event) => {
+      setGitOutput((prev) => prev + event.payload + "\n");
+    });
+    unlistenGitOutput.then((fn) => unlistenersRef.current.push(fn));
+
+    const unlistenError = listen<string>("error", (event) => {
+      console.error("Error:", event.payload);
+    });
+    unlistenError.then((fn) => unlistenersRef.current.push(fn));
+  }, []);
+
+  const loadConfig = async () => {
+    try {
+      const config = await invoke<AppConfig | null>("load_app_config");
+      if (!config?.projects || !Array.isArray(config.projects)) {
+        setCards([]);
+        return;
+      }
+      setCards(config.projects);
+    } catch (err) {
+      console.error("加载配置失败:", err);
+      setCards([]);
+    }
+  };
+
+  const saveConfig = async (projects: ProjectCard[]) => {
+    try {
+      const config: AppConfig = {
+        version: "1.0",
+        updatedAt: new Date().toISOString(),
+        projects,
+      };
+      await invoke("save_app_config", { config });
+    } catch (err) {
+      console.error("保存配置失败:", err);
+    }
+  };
+
+  const addCard = async () => {
+    const newCard: ProjectCard = {
+      id: generateId(),
+      name: `项目 ${cards.length + 1}`,
+      sourcePath: "",
+      targetPath: "",
+      autoPull: true,
+      moveMode: "copy",
+      clearTarget: false,
+      commitMode: "auto",
+      status: "idle",
+      message: "",
+      progress: 0,
+    };
+    const updatedCards = [...cards, newCard];
+    setCards(updatedCards);
+    await saveConfig(updatedCards);
+  };
+
+  const updateCard = async (id: string, updates: Partial<ProjectCard>) => {
+    const updatedCards = cards.map((card) =>
+      card.id === id ? { ...card, ...updates } : card
+    );
+    setCards(updatedCards);
+    await saveConfig(updatedCards);
+  };
+
+  const deleteCard = async (id: string) => {
+    const updatedCards = cards.filter((card) => card.id !== id);
+    setCards(updatedCards);
+    await saveConfig(updatedCards);
+  };
+
+  const selectSource = async (id: string) => {
+    try {
+      const selected = await open({ directory: true, multiple: false });
+      if (selected) {
+        await updateCard(id, { sourcePath: selected as string, status: "idle" });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const selectTarget = async (id: string) => {
+    try {
+      const selected = await open({ directory: true, multiple: false });
+      if (selected) {
+        await updateCard(id, { targetPath: selected as string, status: "idle" });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const executeCard = async (id: string) => {
+    const card = cards.find((item) => item.id === id);
+    if (!card) return;
+
+    if (!card.sourcePath || !card.targetPath) {
+      await updateCard(id, { status: "error", message: "请先选择源目录和目标目录" });
+      return;
+    }
+
+    await updateCard(id, { status: "copying", progress: 0, message: "正在处理..." });
+
+    try {
+      await invoke("copy_and_prepare", {
+        source: card.sourcePath,
+        target: card.targetPath,
+        autoPull: card.autoPull,
+        moveMode: card.moveMode,
+        clearTarget: card.clearTarget,
+        cardId: id,
+      });
+
+      if (card.commitMode === "auto") {
+        await updateCard(id, { status: "committing", message: "正在提交..." });
+        const commitMessage = `${card.name} - ${new Date().toLocaleString()}`;
+        try {
+          await invoke("git_commit_push", {
+            target: card.targetPath,
+            message: commitMessage,
+            cardId: id,
+          });
+          await updateCard(id, { status: "done", message: "部署完成！" });
+        } catch (err) {
+          await updateCard(id, { status: "error", message: `提交失败: ${err}` });
+        }
+      } else if (card.commitMode === "manual") {
+        const defaultMessage = `${card.name} - ${new Date().toLocaleString()}`;
+        setPendingCommit({ card, commitMessage: defaultMessage });
+        setShowManualCommitModal(true);
+      } else {
+        await updateCard(id, { status: "ready", message: "文件已就绪", progress: 100 });
+      }
+    } catch (err) {
+      await updateCard(id, { status: "error", message: `失败: ${err}` });
+    }
+  };
+
+  const confirmCommit = (card: ProjectCard) => {
+    setPendingCommit({ card, commitMessage: `${card.name} - ${new Date().toLocaleString()}` });
+    setShowConfirmModal(true);
+  };
+
+  const executeCommit = async () => {
+    if (!pendingCommit) return;
+
+    const { card, commitMessage } = pendingCommit;
+    setShowConfirmModal(false);
+    setGitOutput("");
+
+    await updateCard(card.id, { status: "committing", message: "正在提交..." });
+
+    try {
+      await invoke("git_commit_push", {
+        target: card.targetPath,
+        message: commitMessage,
+        cardId: card.id,
+      });
+      await updateCard(card.id, { status: "done", message: "部署完成！" });
+    } catch (err) {
+      await updateCard(card.id, { status: "error", message: `提交失败: ${err}` });
+    }
+  };
+
+  const executeManualCommit = async () => {
+    if (!pendingCommit) return;
+
+    const { card, commitMessage } = pendingCommit;
+    setShowManualCommitModal(false);
+    setGitOutput("");
+
+    await updateCard(card.id, { status: "committing", message: "正在提交..." });
+
+    try {
+      await invoke("git_commit_push", {
+        target: card.targetPath,
+        message: commitMessage,
+        cardId: card.id,
+      });
+      await updateCard(card.id, { status: "done", message: "部署完成！" });
+    } catch (err) {
+      await updateCard(card.id, { status: "error", message: `提交失败: ${err}` });
+    }
+  };
+
+  const resetCard = async (id: string) => {
+    await updateCard(id, { status: "idle", message: "", progress: 0 });
+  };
+
+  const exportConfig = () => {
+    const config = {
+      version: "1.0",
+      exportedAt: new Date().toISOString(),
+      projects: cards.map((card) => ({
+        name: card.name,
+        sourcePath: card.sourcePath,
+        targetPath: card.targetPath,
+        autoPull: card.autoPull,
+        moveMode: card.moveMode,
+        clearTarget: card.clearTarget,
+        commitMode: card.commitMode,
+      })),
+    };
+
+    const blob = new Blob([JSON.stringify(config, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `frontend-deployer-config-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importConfig = async () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = async (event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const config = JSON.parse(text) as { projects?: ImportedProject[] };
+
+        if (!config.projects || !Array.isArray(config.projects)) {
+          alert("配置文件格式无效");
+          return;
+        }
+
+        const importedCards: ProjectCard[] = config.projects.map((project) => ({
+          id: generateId(),
+          name: project.name || `项目 ${cards.length + 1}`,
+          sourcePath: project.sourcePath || "",
+          targetPath: project.targetPath || "",
+          autoPull: project.autoPull ?? true,
+          moveMode: project.moveMode || "copy",
+          clearTarget: project.clearTarget ?? false,
+          commitMode: project.commitMode || (project.autoCommit === false ? "none" : "auto"),
+          status: "idle",
+          message: "",
+          progress: 0,
+        }));
+
+        const updatedCards = [...cards, ...importedCards];
+        setCards(updatedCards);
+        await saveConfig(updatedCards);
+        alert(`成功导入 ${importedCards.length} 个项目`);
+      } catch (err) {
+        alert(`导入失败: ${err}`);
+      }
+    };
+    input.click();
+  };
+
+  return (
+    <div className="app-container">
+      <div className="app-header">
+        <h1 className="app-title">前端部署工具</h1>
+        <div className="header-actions">
+          <button className="header-btn" onClick={importConfig} title="导入配置">
+            导入
+          </button>
+          <button className="header-btn" onClick={exportConfig} disabled={cards.length === 0} title="导出配置">
+            导出
+          </button>
+        </div>
+      </div>
+
+      <div className="cards-grid">
+        {cards.map((card) => (
+          <div key={card.id} className={`project-card ${card.status}`}>
+            <div className="card-header">
+              <input
+                type="text"
+                className="card-name-input"
+                value={card.name}
+                onChange={(event) => updateCard(card.id, { name: event.target.value })}
+              />
+              <button className="card-delete-btn" onClick={() => deleteCard(card.id)}>
+                x
+              </button>
+            </div>
+
+            <div className="card-paths">
+              <div className="path-section">
+                <div className="section-header">源目录</div>
+                <div className="path-row">
+                  <button className="path-btn full-width" onClick={() => selectSource(card.id)}>
+                    {card.sourcePath ? "更换目录" : "选择目录"}
+                  </button>
+                </div>
+                <div className="path-display" title={card.sourcePath}>
+                  {card.sourcePath || "未选择"}
+                </div>
+                <div className="section-hint">前端 dist 文件夹</div>
+              </div>
+
+              <div className="path-section">
+                <div className="section-header">目标目录</div>
+                <div className="path-row">
+                  <button className="path-btn full-width" onClick={() => selectTarget(card.id)}>
+                    {card.targetPath ? "更换目录" : "选择目录"}
+                  </button>
+                </div>
+                <div className="path-display" title={card.targetPath}>
+                  {card.targetPath || "未选择"}
+                </div>
+                <div className="section-hint">Git 仓库目录</div>
+
+                <div className="section-options">
+                  <div className="option-item">
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={card.autoPull}
+                        onChange={(event) => updateCard(card.id, { autoPull: event.target.checked })}
+                      />
+                      <span>执行前 git pull</span>
+                    </label>
+                  </div>
+
+                  <div className="option-item">
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={card.clearTarget}
+                        onChange={(event) => updateCard(card.id, { clearTarget: event.target.checked })}
+                      />
+                      <span>移动前清空目标</span>
+                    </label>
+                  </div>
+
+                  <div className="option-item">
+                    <span className="radio-group-label">提交方式：</span>
+                    <div className="radio-group-inline">
+                      <label className="radio-label">
+                        <input
+                          type="radio"
+                          name={`commitMode-${card.id}`}
+                          value="auto"
+                          checked={card.commitMode === "auto"}
+                          onChange={() => updateCard(card.id, { commitMode: "auto" })}
+                        />
+                        <span>默认</span>
+                      </label>
+                      <label className="radio-label">
+                        <input
+                          type="radio"
+                          name={`commitMode-${card.id}`}
+                          value="manual"
+                          checked={card.commitMode === "manual"}
+                          onChange={() => updateCard(card.id, { commitMode: "manual" })}
+                        />
+                        <span>手动输入</span>
+                      </label>
+                      <label className="radio-label">
+                        <input
+                          type="radio"
+                          name={`commitMode-${card.id}`}
+                          value="none"
+                          checked={card.commitMode === "none"}
+                          onChange={() => updateCard(card.id, { commitMode: "none" })}
+                        />
+                        <span>不提交</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="path-section">
+                <div className="section-header">操作方式</div>
+                <div className="radio-group">
+                  <label className="radio-label">
+                    <input
+                      type="radio"
+                      name={`moveMode-${card.id}`}
+                      value="copy"
+                      checked={card.moveMode === "copy"}
+                      onChange={() => updateCard(card.id, { moveMode: "copy" })}
+                    />
+                    <span>复制</span>
+                  </label>
+                  <label className="radio-label">
+                    <input
+                      type="radio"
+                      name={`moveMode-${card.id}`}
+                      value="cut"
+                      checked={card.moveMode === "cut"}
+                      onChange={() => updateCard(card.id, { moveMode: "cut" })}
+                    />
+                    <span>剪切</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="card-status">
+              <span className={`status-badge ${card.status}`}>{getStatusText(card.status)}</span>
+              {card.message && <div className="status-message">{card.message}</div>}
+              {card.status === "copying" && (
+                <div className="progress-bar-container">
+                  <div className="progress-bar" style={{ width: `${card.progress}%` }} />
+                </div>
+              )}
+            </div>
+
+            <div className="card-actions">
+              {card.status === "idle" && (
+                <button
+                  className="action-btn execute-btn"
+                  onClick={() => executeCard(card.id)}
+                  disabled={!card.sourcePath || !card.targetPath}
+                >
+                  执行
+                </button>
+              )}
+              {card.status === "ready" && card.commitMode !== "none" && (
+                <button className="action-btn confirm-btn" onClick={() => confirmCommit(card)}>
+                  确认提交
+                </button>
+              )}
+              {card.status === "ready" && card.commitMode === "none" && (
+                <button className="action-btn reset-btn" onClick={() => resetCard(card.id)}>
+                  重置
+                </button>
+              )}
+              {(card.status === "done" || card.status === "error") && (
+                <button className="action-btn reset-btn" onClick={() => resetCard(card.id)}>
+                  {card.status === "error" ? "重试" : "重置"}
+                </button>
+              )}
+              {card.status === "copying" && (
+                <button className="action-btn execute-btn" disabled>
+                  复制中...
+                </button>
+              )}
+              {card.status === "committing" && (
+                <button className="action-btn confirm-btn" disabled>
+                  提交中...
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+
+        <button className="add-card-btn" onClick={addCard}>
+          <span className="add-icon">+</span>
+          <span>添加项目</span>
+        </button>
+      </div>
+
+      {showManualCommitModal && pendingCommit && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>输入 Commit 信息</h3>
+            <p>项目: {pendingCommit.card.name}</p>
+            <div className="modal-path">
+              <small>目标: {pendingCommit.card.targetPath}</small>
+            </div>
+            <div className="modal-commit-section">
+              <label>Commit 消息:</label>
+              <input
+                type="text"
+                className="commit-input"
+                value={pendingCommit.commitMessage}
+                onChange={(event) =>
+                  setPendingCommit({ ...pendingCommit, commitMessage: event.target.value })
+                }
+                autoFocus
+              />
+            </div>
+            <div className="modal-actions">
+              <button className="action-btn cancel-btn" onClick={() => {
+                setShowManualCommitModal(false);
+                updateCard(pendingCommit.card.id, { status: "ready", message: "文件已就绪", progress: 100 });
+              }}>
+                取消
+              </button>
+              <button className="action-btn confirm-btn" onClick={executeManualCommit}>
+                确认并提交
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showConfirmModal && pendingCommit && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>确认 Git 提交</h3>
+            <p>项目: {pendingCommit.card.name}</p>
+            <div className="modal-path">
+              <small>目标: {pendingCommit.card.targetPath}</small>
+            </div>
+            <div className="modal-commit-section">
+              <label>Commit 消息:</label>
+              <input
+                type="text"
+                className="commit-input"
+                value={pendingCommit.commitMessage}
+                onChange={(event) =>
+                  setPendingCommit({ ...pendingCommit, commitMessage: event.target.value })
+                }
+              />
+            </div>
+            <div className="modal-actions">
+              <button className="action-btn cancel-btn" onClick={() => setShowConfirmModal(false)}>
+                取消
+              </button>
+              <button className="action-btn confirm-btn" onClick={executeCommit}>
+                确认并推送
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {gitOutput && (
+        <div className="git-output-panel">
+          <div className="git-output-header">
+            <span>Git 输出</span>
+            <button onClick={() => setGitOutput("")}>清除</button>
+          </div>
+          <pre className="git-output-content">{gitOutput}</pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function getStatusText(status: string): string {
+  const map: Record<string, string> = {
+    idle: "待执行",
+    copying: "复制中",
+    ready: "待提交",
+    committing: "提交中",
+    done: "已完成",
+    error: "错误",
+  };
+  return map[status] || status;
+}
+
+export default App;
