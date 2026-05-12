@@ -1,6 +1,6 @@
-﻿import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { open } from "@tauri-apps/plugin-dialog";
+import { open, save } from "@tauri-apps/plugin-dialog";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 
 interface ProjectCard {
@@ -295,7 +295,7 @@ function App() {
     await updateCard(id, { status: "idle", message: "", progress: 0 });
   };
 
-  const exportConfig = () => {
+  const exportConfig = async () => {
     const config = {
       version: "1.0",
       exportedAt: new Date().toISOString(),
@@ -310,13 +310,19 @@ function App() {
       })),
     };
 
-    const blob = new Blob([JSON.stringify(config, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `frontend-deployer-config-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const filePath = await save({
+      defaultPath: `frontend-deployer-config-${new Date().toISOString().slice(0, 10)}.json`,
+      filters: [{ name: "JSON", extensions: ["json"] }],
+    });
+
+    if (!filePath) return;
+
+    try {
+      await invoke("write_text_file", { path: filePath, contents: JSON.stringify(config, null, 2) });
+    } catch (err) {
+      console.error("导出失败:", err);
+      alert(`导出失败: ${err}`);
+    }
   };
 
   const importConfig = async () => {

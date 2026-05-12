@@ -163,14 +163,31 @@ npm run tauri build
 
 ## 五、常见问题
 
-### Q1: cargo command not found
+### Q1: cargo command not found / program not found
 
 **原因**：Rust 未安装或 PATH 未配置
 
-**解决**：
+**解决**：添加 Rust cargo 路径到 PATH
+
 ```powershell
 $env:PATH = "$env:USERPROFILE\.cargo\bin;$env:PATH"
 ```
+
+**如果提示找不到 cargo.exe**，可能是 Rust 安装在其他位置，尝试：
+
+```powershell
+# 方案1：使用完整用户路径
+$env:PATH = "C:\Users\YBG\.cargo\bin;$env:PATH"
+
+# 方案2：在当前用户目录下查找
+Get-ChildItem -Path "C:\Users\$env:USERNAME" -Filter "cargo.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 5 -ExpandProperty FullName
+```
+
+**永久配置 PATH**：
+1. 按 `Win + R`，输入 `sysdm.cpl`
+2. 高级 → 环境变量 → 用户变量 → Path → 编辑
+3. 添加：`C:\Users\你的用户名\.cargo\bin`
+4. 重启终端
 
 ### Q2: linker link.exe not found
 

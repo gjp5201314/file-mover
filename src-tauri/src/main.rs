@@ -1,4 +1,4 @@
-﻿#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -280,6 +280,11 @@ fn save_app_config(_app: tauri::AppHandle, config: serde_json::Value) -> Result<
     fs::write(&config_path, content).map_err(|e| format!("保存配置失败: {}", e))
 }
 
+#[tauri::command]
+fn write_text_file(path: String, contents: String) -> Result<(), String> {
+    fs::write(&path, contents).map_err(|e| format!("写入文件失败: {}", e))
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -291,7 +296,8 @@ fn main() {
             get_exe_dir,
             get_config_path,
             load_app_config,
-            save_app_config
+            save_app_config,
+            write_text_file
         ])
         .run(tauri::generate_context!())
         .expect("启动应用失败");

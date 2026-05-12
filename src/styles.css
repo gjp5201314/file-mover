@@ -194,12 +194,12 @@ body {
   border-top: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12px;
 }
 
 .option-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .path-row {
@@ -262,11 +262,13 @@ body {
 
 .radio-group-inline {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
 }
 
 .radio-group-label {
+  white-space: nowrap;
   font-size: 13px;
   color: #6b7280;
   margin-bottom: 0;
