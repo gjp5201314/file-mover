@@ -2,10 +2,13 @@
 
 use serde::{Deserialize, Serialize};
 use std::fs;
+use std::os::windows::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use tauri::Emitter;
 use tauri::Manager;
+
+const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 const CONFIG_FILE_NAME: &str = "frontend-deployer-config.json";
 
@@ -79,6 +82,7 @@ async fn git_pull(
     }
 
     let git_pull_output = Command::new("git")
+        .creation_flags(CREATE_NO_WINDOW)
         .args(["-C", &target, "pull"])
         .output()
         .map_err(|e| format!("git pull 失败: {}", e))?;
@@ -101,7 +105,8 @@ async fn copy_and_prepare(
     target: String,
     auto_pull: bool,
     move_mode: String,
-    clear_target: bool,
+    clear_target_mode: String,
+    clear_target_folders: Vec<String>,
     card_id: String,
 ) -> Result<String, String> {
     let source_path = Path::new(&source);
@@ -117,6 +122,7 @@ async fn copy_and_prepare(
 
     if auto_pull {
         let git_pull_output = Command::new("git")
+            .creation_flags(CREATE_NO_WINDOW)
             .args(["-C", &target, "pull"])
             .output()
             .map_err(|e| format!("git pull 失败: {}", e))?;
@@ -130,8 +136,16 @@ async fn copy_and_prepare(
         }
     }
 
-    if clear_target {
+    if clear_target_mode == "all" {
         remove_dir_all_recursive(target_path)?;
+    } else if clear_target_mode == "specific" {
+        for folder in &clear_target_folders {
+            let folder_path = target_path.join(folder);
+            if folder_path.exists() && folder_path.is_dir() {
+                remove_dir_all_recursive(&folder_path)?;
+                fs::remove_dir(&folder_path).map_err(|e| e.to_string())?;
+            }
+        }
     }
 
     let is_cut = move_mode == "cut";
@@ -161,6 +175,7 @@ async fn git_commit_push(
     }
 
     let git_add_output = Command::new("git")
+        .creation_flags(CREATE_NO_WINDOW)
         .args(["-C", &target, "add", "."])
         .output()
         .map_err(|e| format!("git add 失败: {}", e))?;
@@ -174,6 +189,7 @@ async fn git_commit_push(
     }
 
     let git_commit_output = Command::new("git")
+        .creation_flags(CREATE_NO_WINDOW)
         .args(["-C", &target, "commit", "-m", &message])
         .output()
         .map_err(|e| format!("git commit 失败: {}", e))?;
@@ -190,6 +206,7 @@ async fn git_commit_push(
     }
 
     let git_push_output = Command::new("git")
+        .creation_flags(CREATE_NO_WINDOW)
         .args(["-C", &target, "push"])
         .output()
         .map_err(|e| format!("git push 失败: {}", e))?;
@@ -214,6 +231,44 @@ fn get_exe_dir() -> Result<String, String> {
                 .map(|p| p.to_string_lossy().to_string())
                 .ok_or_else(|| "获取父目录失败".to_string())
         })
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct DirEntry {
+    name: String,
+    #[serde(rename = "isDirectory")]
+    is_directory: bool,
+}
+
+#[tauri::command]
+fn list_directories(path: String) -> Result<Vec<DirEntry>, String> {
+    let target_path = Path::new(&path);
+    if !target_path.exists() {
+        return Err("目录不存在".to_string());
+    }
+    if !target_path.is_dir() {
+        return Err("路径不是目录".to_string());
+    }
+
+    let mut entries: Vec<DirEntry> = Vec::new();
+    for entry in fs::read_dir(target_path).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        let entry_path = entry.path();
+        let is_dir = entry_path.is_dir();
+        let file_name = entry.file_name().to_string_lossy().to_string();
+        entries.push(DirEntry {
+            name: file_name,
+            is_directory: is_dir,
+        });
+    }
+    entries.sort_by(|a, b| {
+        if a.is_directory != b.is_directory {
+            b.is_directory.cmp(&a.is_directory)
+        } else {
+            a.name.cmp(&b.name)
+        }
+    });
+    Ok(entries)
 }
 
 #[tauri::command]
@@ -297,7 +352,8 @@ fn main() {
             get_config_path,
             load_app_config,
             save_app_config,
-            write_text_file
+            write_text_file,
+            list_directories
         ])
         .run(tauri::generate_context!())
         .expect("启动应用失败");
