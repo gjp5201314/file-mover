@@ -4,6 +4,9 @@ node_modules
 /dist
 /build/
 .cache-loader/
+# 忽略所有编译产物目录
+src-tauri/target/
+target/
 
 # local env files
 .env.local
