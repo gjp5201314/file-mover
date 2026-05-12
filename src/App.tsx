@@ -51,6 +51,7 @@ function App() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showManualCommitModal, setShowManualCommitModal] = useState(false);
   const [pendingCommit, setPendingCommit] = useState<{ card: ProjectCard; commitMessage: string } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<ProjectCard | null>(null);
   const [gitOutput, setGitOutput] = useState<string>("");
   const unlistenersRef = useRef<UnlistenFn[]>([]);
 
@@ -72,7 +73,7 @@ function App() {
       setCards((prev) =>
         prev.map((card) =>
           card.id === cardId
-            ? { ...card, progress, message: `正在复制: ${currentFile}` }
+            ? { ...card, progress, message: `正在处理文件: ${currentFile}` }
             : card
         )
       );
@@ -144,6 +145,16 @@ function App() {
     await saveConfig(updatedCards);
   };
 
+  const requestDeleteCard = (card: ProjectCard) => {
+    setPendingDelete(card);
+  };
+
+  const confirmDeleteCard = async () => {
+    if (!pendingDelete) return;
+    await deleteCard(pendingDelete.id);
+    setPendingDelete(null);
+  };
+
   const deleteCard = async (id: string) => {
     const updatedCards = cards.filter((card) => card.id !== id);
     setCards(updatedCards);
@@ -181,7 +192,7 @@ function App() {
       return;
     }
 
-    await updateCard(id, { status: "copying", progress: 0, message: "正在处理..." });
+    await updateCard(id, { status: "copying", progress: 0, message: "准备执行部署流程..." });
     setGitOutput("");
 
     try {
@@ -193,6 +204,11 @@ function App() {
         });
       }
 
+      await updateCard(id, {
+        status: "copying",
+        progress: 0,
+        message: card.clearTarget ? "正在清空目标目录并处理文件..." : "正在处理文件...",
+      });
       await invoke("copy_and_prepare", {
         source: card.sourcePath,
         target: card.targetPath,
@@ -203,7 +219,7 @@ function App() {
       });
 
       if (card.commitMode === "auto") {
-        await updateCard(id, { status: "committing", message: "正在提交..." });
+        await updateCard(id, { status: "committing", progress: 100, message: "正在提交并推送到远程仓库..." });
         const commitMessage = `${card.name} - ${new Date().toLocaleString()}`;
         try {
           await invoke("git_commit_push", {
@@ -211,16 +227,17 @@ function App() {
             message: commitMessage,
             cardId: id,
           });
-          await updateCard(id, { status: "done", message: "部署完成！" });
+          await updateCard(id, { status: "done", progress: 100, message: "部署完成，已提交并推送。" });
         } catch (err) {
           await updateCard(id, { status: "error", message: `提交失败: ${err}` });
         }
       } else if (card.commitMode === "manual") {
         const defaultMessage = `${card.name} - ${new Date().toLocaleString()}`;
+        await updateCard(id, { status: "ready", message: "文件处理完成，等待填写 Commit 信息。", progress: 100 });
         setPendingCommit({ card, commitMessage: defaultMessage });
         setShowManualCommitModal(true);
       } else {
-        await updateCard(id, { status: "ready", message: "文件已就绪", progress: 100 });
+        await updateCard(id, { status: "ready", message: "文件处理完成，未执行 Git 提交。", progress: 100 });
       }
     } catch (err) {
       await updateCard(id, { status: "error", message: `失败: ${err}` });
@@ -239,7 +256,7 @@ function App() {
     setShowConfirmModal(false);
     setGitOutput("");
 
-    await updateCard(card.id, { status: "committing", message: "正在提交..." });
+    await updateCard(card.id, { status: "committing", message: "正在提交并推送到远程仓库..." });
 
     try {
       await invoke("git_commit_push", {
@@ -247,7 +264,7 @@ function App() {
         message: commitMessage,
         cardId: card.id,
       });
-      await updateCard(card.id, { status: "done", message: "部署完成！" });
+      await updateCard(card.id, { status: "done", message: "部署完成，已提交并推送。" });
     } catch (err) {
       await updateCard(card.id, { status: "error", message: `提交失败: ${err}` });
     }
@@ -260,7 +277,7 @@ function App() {
     setShowManualCommitModal(false);
     setGitOutput("");
 
-    await updateCard(card.id, { status: "committing", message: "正在提交..." });
+    await updateCard(card.id, { status: "committing", message: "正在提交并推送到远程仓库..." });
 
     try {
       await invoke("git_commit_push", {
@@ -268,7 +285,7 @@ function App() {
         message: commitMessage,
         cardId: card.id,
       });
-      await updateCard(card.id, { status: "done", message: "部署完成！" });
+      await updateCard(card.id, { status: "done", message: "部署完成，已提交并推送。" });
     } catch (err) {
       await updateCard(card.id, { status: "error", message: `提交失败: ${err}` });
     }
@@ -368,7 +385,12 @@ function App() {
                 value={card.name}
                 onChange={(event) => updateCard(card.id, { name: event.target.value })}
               />
-              <button className="card-delete-btn" onClick={() => deleteCard(card.id)}>
+              <button
+                className="card-delete-btn"
+                onClick={() => requestDeleteCard(card)}
+                disabled={card.status === "copying" || card.status === "committing"}
+                title="删除项目"
+              >
                 x
               </button>
             </div>
@@ -407,7 +429,7 @@ function App() {
                         checked={card.autoPull}
                         onChange={(event) => updateCard(card.id, { autoPull: event.target.checked })}
                       />
-                      <span>执行前 git pull</span>
+                      <span>执行前先 git pull</span>
                     </label>
                   </div>
 
@@ -418,7 +440,7 @@ function App() {
                         checked={card.clearTarget}
                         onChange={(event) => updateCard(card.id, { clearTarget: event.target.checked })}
                       />
-                      <span>移动前清空目标</span>
+                      <span>操作前清空目标目录</span>
                     </label>
                   </div>
 
@@ -433,7 +455,7 @@ function App() {
                           checked={card.commitMode === "auto"}
                           onChange={() => updateCard(card.id, { commitMode: "auto" })}
                         />
-                        <span>默认</span>
+                        <span>自动提交并推送</span>
                       </label>
                       <label className="radio-label">
                         <input
@@ -443,7 +465,7 @@ function App() {
                           checked={card.commitMode === "manual"}
                           onChange={() => updateCard(card.id, { commitMode: "manual" })}
                         />
-                        <span>手动输入</span>
+                        <span>手动填写 Commit</span>
                       </label>
                       <label className="radio-label">
                         <input
@@ -453,7 +475,7 @@ function App() {
                           checked={card.commitMode === "none"}
                           onChange={() => updateCard(card.id, { commitMode: "none" })}
                         />
-                        <span>不提交</span>
+                        <span>只处理文件，不提交</span>
                       </label>
                     </div>
                   </div>
@@ -504,12 +526,12 @@ function App() {
                   onClick={() => executeCard(card.id)}
                   disabled={!card.sourcePath || !card.targetPath}
                 >
-                  执行
+                  开始执行
                 </button>
               )}
               {card.status === "ready" && card.commitMode !== "none" && (
                 <button className="action-btn confirm-btn" onClick={() => confirmCommit(card)}>
-                  确认提交
+                  填写并提交
                 </button>
               )}
               {card.status === "ready" && card.commitMode === "none" && (
@@ -524,7 +546,7 @@ function App() {
               )}
               {card.status === "copying" && (
                 <button className="action-btn execute-btn" disabled>
-                  复制中...
+                  执行中...
                 </button>
               )}
               {card.status === "committing" && (
@@ -541,6 +563,28 @@ function App() {
           <span>添加项目</span>
         </button>
       </div>
+
+      {pendingDelete && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>确认删除项目</h3>
+            <p>将从列表中删除“{pendingDelete.name}”。此操作只删除应用里的项目配置，不会删除源目录或目标目录中的文件。</p>
+            <div className="modal-path">
+              <small>源目录: {pendingDelete.sourcePath || "未选择"}</small>
+              <br />
+              <small>目标目录: {pendingDelete.targetPath || "未选择"}</small>
+            </div>
+            <div className="modal-actions">
+              <button className="action-btn cancel-btn" onClick={() => setPendingDelete(null)}>
+                取消
+              </button>
+              <button className="action-btn danger-btn" onClick={confirmDeleteCard}>
+                确认删除
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showManualCommitModal && pendingCommit && (
         <div className="modal-overlay">
@@ -565,7 +609,7 @@ function App() {
             <div className="modal-actions">
               <button className="action-btn cancel-btn" onClick={() => {
                 setShowManualCommitModal(false);
-                updateCard(pendingCommit.card.id, { status: "ready", message: "文件已就绪", progress: 100 });
+                updateCard(pendingCommit.card.id, { status: "ready", message: "文件处理完成，等待提交。", progress: 100 });
               }}>
                 取消
               </button>
@@ -624,8 +668,8 @@ function App() {
 function getStatusText(status: string): string {
   const map: Record<string, string> = {
     idle: "待执行",
-    copying: "复制中",
-    ready: "待提交",
+    copying: "执行中",
+    ready: "待确认",
     committing: "提交中",
     done: "已完成",
     error: "错误",

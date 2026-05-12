@@ -156,6 +156,11 @@ body {
   background: #fecaca;
 }
 
+.card-delete-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .card-paths {
   display: flex;
   flex-direction: column;
@@ -427,6 +432,17 @@ body {
 
 .cancel-btn:hover {
   background: #e5e7eb;
+}
+
+.danger-btn {
+  background: #dc2626;
+  color: white;
+}
+
+.danger-btn:hover:not(:disabled) {
+  background: #b91c1c;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
 }
 
 .add-card-btn {
