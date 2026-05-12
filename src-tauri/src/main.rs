@@ -1,4 +1,6 @@
-﻿use serde::{Deserialize, Serialize};
+﻿#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -294,3 +296,4 @@ fn main() {
         .run(tauri::generate_context!())
         .expect("启动应用失败");
 }
+
