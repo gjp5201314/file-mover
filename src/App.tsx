@@ -182,12 +182,21 @@ function App() {
     }
 
     await updateCard(id, { status: "copying", progress: 0, message: "正在处理..." });
+    setGitOutput("");
 
     try {
+      if (card.autoPull) {
+        await updateCard(id, { status: "copying", progress: 0, message: "正在执行 git pull..." });
+        await invoke("git_pull", {
+          target: card.targetPath,
+          cardId: id,
+        });
+      }
+
       await invoke("copy_and_prepare", {
         source: card.sourcePath,
         target: card.targetPath,
-        autoPull: card.autoPull,
+        autoPull: false,
         moveMode: card.moveMode,
         clearTarget: card.clearTarget,
         cardId: id,
