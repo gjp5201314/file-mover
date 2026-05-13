@@ -56,6 +56,17 @@ function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
+function formatTimestamp(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
 function App() {
   const [cards, setCards] = useState<ProjectCard[]>([]);
   const [activeTab, setActiveTab] = useState<string | null>(null);
@@ -89,12 +100,12 @@ function App() {
             : card
         )
       );
-      setFileOutput((prev) => prev + `[${current}/${total}] ${currentFile}\n`);
+      setFileOutput((prev) => prev + `[${formatTimestamp()}] [${current}/${total}] ${currentFile}\n`);
     });
     unlistenProgress.then((fn) => unlistenersRef.current.push(fn));
 
     const unlistenGitOutput = listen<string>("git-output", (event) => {
-      setGitOutput((prev) => prev + event.payload + "\n");
+      setGitOutput((prev) => prev + `[${formatTimestamp()}] ${event.payload}\n`);
     });
     unlistenGitOutput.then((fn) => unlistenersRef.current.push(fn));
 

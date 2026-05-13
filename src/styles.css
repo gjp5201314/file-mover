@@ -1,6 +1,6 @@
 :root {
   font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-  font-size: 14px;
+  font-size: 13px;
   color: #1a1a1a;
   background-color: #f0f2f5;
 }
@@ -12,18 +12,18 @@
 }
 
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
   background: #f1f1f1;
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb {
   background: #c1c1c1;
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -37,25 +37,25 @@
 
 body {
   min-height: 100vh;
-  padding: 24px;
+  padding: 12px 16px;
 }
 
 #root {
   width: 100%;
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
 .app-container {
   background: transparent;
-  min-height: calc(100vh - 48px);
+  min-height: calc(100vh - 32px);
   display: flex;
   flex-direction: column;
 }
 
 .app-title {
   color: #1a1a1a;
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   margin: 0;
 }
@@ -64,20 +64,20 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .header-actions {
   display: flex;
-  gap: 12px;
+  gap: 8px;
 }
 
 .header-btn {
-  padding: 8px 16px;
+  padding: 6px 12px;
   border: 1px solid #d1d5db;
   background: white;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: 6px;
+  font-size: 13px;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -95,13 +95,13 @@ body {
 
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
   flex: 1;
 }
 
 .tabs-container {
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   border-bottom: 2px solid #e5e7eb;
   padding-bottom: 0;
 }
@@ -114,18 +114,18 @@ body {
 }
 
 .tab-item {
-  width: 100px;
-  height: 48px;
+  min-width: 90px;
+  height: 40px;
   box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 12px 8px;
+  gap: 6px;
+  padding: 10px 6px;
   background: #f3f4f6;
   border: none;
-  border-radius: 12px 12px 0 0;
-  font-size: 14px;
+  border-radius: 10px 10px 0 0;
+  font-size: 13px;
   font-weight: 500;
   color: #6b7280;
   cursor: pointer;
@@ -145,7 +145,6 @@ body {
   color: #1a1a1a;
   border-color: #e5e7eb;
   border-bottom-color: white;
-  margin-bottom: -2px;
 }
 
 .tab-item.active::after {
@@ -173,20 +172,20 @@ body {
 }
 
 .add-tab .add-icon {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
 }
 
 .tab-name {
-  max-width: 150px;
+  max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .tab-status-dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: #d1d5db;
   flex-shrink: 0;
@@ -226,7 +225,7 @@ body {
 .project-detail {
   flex: 1;
   display: flex;
-  gap: 24px;
+  gap: 16px;
   min-height: 0;
 }
 
@@ -237,16 +236,16 @@ body {
 }
 
 .project-sidebar {
-  width: 380px;
+  width: 320px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .sidebar-section {
   background: white;
-  border-radius: 12px;
+  border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
@@ -257,21 +256,21 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
+  padding: 12px 16px;
   background: #374151;
   color: #f9fafb;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
 }
 
 .sidebar-clear-btn {
-  padding: 4px 12px;
+  padding: 3px 10px;
   background: #4b5563;
   border: none;
   border-radius: 4px;
   color: #d1d5db;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
   transition: background 0.2s;
 }
 
@@ -281,9 +280,9 @@ body {
 
 .sidebar-content {
   flex: 1;
-  padding: 16px;
+  padding: 12px;
   overflow-y: auto;
-  max-height: 400px;
+  max-height: 300px;
 }
 
 .log-content {
@@ -294,8 +293,8 @@ body {
   margin: 0;
   color: #10b981;
   font-family: "Consolas", monospace;
-  font-size: 12px;
-  line-height: 1.6;
+  font-size: 11px;
+  line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-all;
 }
@@ -306,9 +305,9 @@ body {
 
 .sidebar-empty {
   color: #6b7280;
-  font-size: 13px;
+  font-size: 12px;
   text-align: center;
-  padding: 20px;
+  padding: 16px;
 }
 
 .empty-state {
@@ -317,8 +316,8 @@ body {
   align-items: center;
   justify-content: center;
   color: #9ca3af;
-  font-size: 16px;
-  padding: 60px 20px;
+  font-size: 14px;
+  padding: 40px 16px;
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -326,18 +325,18 @@ body {
 
 .project-card {
   background: white;
-  border-radius: 12px;
+  border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  padding: 20px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   transition: all 0.2s;
   border: 2px solid transparent;
 }
 
 .project-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .project-card.ready {
@@ -362,16 +361,16 @@ body {
 .card-header {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .card-name-input {
   flex: 1;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   border: none;
   background: transparent;
-  padding: 4px 8px;
+  padding: 4px 6px;
   border-radius: 6px;
   color: #1a1a1a;
 }
@@ -386,13 +385,13 @@ body {
 }
 
 .card-delete-btn {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border: none;
   background: #fee2e2;
   color: #dc2626;
-  border-radius: 8px;
-  font-size: 20px;
+  border-radius: 6px;
+  font-size: 18px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -412,37 +411,37 @@ body {
 .card-paths {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .path-section {
   background: #f9fafb;
-  border-radius: 8px;
-  padding: 12px;
+  border-radius: 6px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .section-header {
   font-weight: 600;
-  font-size: 13px;
+  font-size: 12px;
   color: #374151;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .section-hint {
-  font-size: 11px;
+  font-size: 10px;
   color: #9ca3af;
 }
 
 .section-options {
-  margin-top: 8px;
-  padding-top: 8px;
+  margin-top: 6px;
+  padding-top: 6px;
   border-top: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .option-item {
@@ -457,23 +456,23 @@ body {
 }
 
 .path-row label {
-  font-size: 13px;
+  font-size: 12px;
   color: #6b7280;
 }
 
 .checkbox-label {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   color: #6b7280;
   user-select: none;
 }
 
 .checkbox-label input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   cursor: pointer;
   accent-color: #3b82f6;
 }
@@ -484,22 +483,22 @@ body {
 
 .radio-group {
   display: flex;
-  gap: 16px;
+  gap: 12px;
 }
 
 .radio-label {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   color: #6b7280;
   user-select: none;
 }
 
 .radio-label input[type="radio"] {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   cursor: pointer;
   accent-color: #3b82f6;
 }
@@ -512,12 +511,12 @@ body {
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .radio-group-label {
   white-space: nowrap;
-  font-size: 13px;
+  font-size: 12px;
   color: #6b7280;
   margin-bottom: 0;
   display: inline;
@@ -525,30 +524,30 @@ body {
 }
 
 .folder-selection {
-  margin-top: 8px;
-  padding: 12px;
+  margin-top: 6px;
+  padding: 10px;
   background: #f3f4f6;
-  border-radius: 8px;
+  border-radius: 6px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .folder-selection-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 13px;
+  font-size: 12px;
   color: #374151;
   font-weight: 500;
 }
 
 .refresh-folders-btn {
-  padding: 4px 10px;
+  padding: 3px 8px;
   background: #e5e7eb;
   border: 1px solid #d1d5db;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 10px;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -560,28 +559,28 @@ body {
 }
 
 .folder-list {
-  max-height: 150px;
+  max-height: 120px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .folder-list-empty {
-  font-size: 12px;
+  font-size: 11px;
   color: #9ca3af;
   text-align: center;
-  padding: 12px;
+  padding: 10px;
 }
 
 .folder-checkbox-label {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   color: #6b7280;
-  padding: 4px 8px;
+  padding: 3px 6px;
   border-radius: 4px;
   transition: background 0.2s;
 }
@@ -592,8 +591,8 @@ body {
 }
 
 .folder-checkbox-label input[type="checkbox"] {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   cursor: pointer;
   accent-color: #3b82f6;
 }
@@ -608,11 +607,11 @@ body {
 }
 
 .path-btn {
-  padding: 6px 14px;
+  padding: 5px 12px;
   border: 1px solid #d1d5db;
   background: white;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 12px;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -628,9 +627,9 @@ body {
 }
 
 .path-display {
-  font-size: 12px;
+  font-size: 11px;
   color: #9ca3af;
-  padding: 8px 12px;
+  padding: 6px 10px;
   background: #f9fafb;
   border-radius: 6px;
   overflow: hidden;
@@ -642,16 +641,16 @@ body {
 .card-status {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  min-height: 60px;
+  gap: 6px;
+  min-height: 50px;
 }
 
 .status-badge {
   display: inline-flex;
   align-items: center;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 11px;
   font-weight: 600;
   width: fit-content;
 }
@@ -687,12 +686,12 @@ body {
 }
 
 .status-message {
-  font-size: 13px;
+  font-size: 12px;
   color: #6b7280;
 }
 
 .progress-bar-container {
-  height: 6px;
+  height: 5px;
   background: #e5e7eb;
   border-radius: 3px;
   overflow: hidden;
@@ -707,15 +706,15 @@ body {
 
 .card-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   margin-top: auto;
 }
 
 .action-btn {
   flex: 1;
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 14px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -781,17 +780,17 @@ body {
 .add-card-btn {
   background: white;
   border: 2px dashed #d1d5db;
-  border-radius: 12px;
-  padding: 40px;
+  border-radius: 10px;
+  padding: 30px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
   cursor: pointer;
   transition: all 0.2s;
   color: #9ca3af;
-  min-height: 280px;
+  min-height: 220px;
 }
 
 .add-card-btn:hover {
@@ -801,7 +800,7 @@ body {
 }
 
 .add-icon {
-  font-size: 48px;
+  font-size: 40px;
   font-weight: 300;
 }
 
@@ -820,49 +819,52 @@ body {
 
 .modal-content {
   background: white;
-  border-radius: 16px;
-  padding: 32px;
+  border-radius: 12px;
+  padding: 24px;
   width: 90%;
-  max-width: 480px;
+  max-width: 420px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
 .modal-content h3 {
-  font-size: 20px;
-  margin-bottom: 12px;
+  font-size: 18px;
+  margin-bottom: 10px;
   color: #1a1a1a;
 }
 
 .modal-content p {
   color: #6b7280;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+  font-size: 13px;
 }
 
 .modal-path {
-  padding: 12px;
+  padding: 10px;
   background: #f9fafb;
-  border-radius: 8px;
-  margin-bottom: 20px;
+  border-radius: 6px;
+  margin-bottom: 16px;
   word-break: break-all;
+  font-size: 12px;
 }
 
 .modal-commit-section {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .modal-commit-section label {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   font-weight: 600;
   color: #374151;
+  font-size: 13px;
 }
 
 .commit-input {
   width: 100%;
-  padding: 12px 16px;
+  padding: 10px 14px;
   border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: 6px;
+  font-size: 13px;
   transition: border-color 0.2s;
 }
 
@@ -873,7 +875,7 @@ body {
 
 .modal-actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
 }
 
 .modal-actions .action-btn {
@@ -881,9 +883,9 @@ body {
 }
 
 .git-output-panel {
-  margin-top: 24px;
+  margin-top: 16px;
   background: #1f2937;
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
 }
 
@@ -891,20 +893,20 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: 10px 14px;
   background: #374151;
   color: #f9fafb;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .git-output-header button {
-  padding: 4px 12px;
+  padding: 3px 10px;
   background: #4b5563;
   border: none;
   border-radius: 4px;
   color: #d1d5db;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .git-output-header button:hover {
@@ -912,12 +914,12 @@ body {
 }
 
 .git-output-content {
-  padding: 16px;
+  padding: 12px;
   color: #10b981;
   font-family: "Consolas", monospace;
-  font-size: 12px;
-  line-height: 1.6;
-  max-height: 200px;
+  font-size: 11px;
+  line-height: 1.5;
+  max-height: 160px;
   overflow-y: auto;
   white-space: pre-wrap;
   word-break: break-all;
