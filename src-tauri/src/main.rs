@@ -340,6 +340,60 @@ fn write_text_file(path: String, contents: String) -> Result<(), String> {
     fs::write(&path, contents).map_err(|e| format!("写入文件失败: {}", e))
 }
 
+#[tauri::command]
+fn set_git_proxy(port: u16) -> Result<(), String> {
+    let proxy_url = format!("http://127.0.0.1:{}", port);
+    
+    Command::new("git")
+        .creation_flags(CREATE_NO_WINDOW)
+        .args(["config", "--global", "http.proxy", &proxy_url])
+        .output()
+        .map_err(|e| format!("设置 HTTP 代理失败: {}", e))?;
+    
+    Command::new("git")
+        .creation_flags(CREATE_NO_WINDOW)
+        .args(["config", "--global", "https.proxy", &proxy_url])
+        .output()
+        .map_err(|e| format!("设置 HTTPS 代理失败: {}", e))?;
+    
+    Ok(())
+}
+
+#[tauri::command]
+fn get_git_proxy() -> Result<Option<String>, String> {
+    let http_output = Command::new("git")
+        .creation_flags(CREATE_NO_WINDOW)
+        .args(["config", "--global", "--get", "http.proxy"])
+        .output()
+        .map_err(|e| format!("获取 Git 代理配置失败: {}", e))?;
+    
+    if http_output.status.success() && !http_output.stdout.is_empty() {
+        let proxy = String::from_utf8_lossy(&http_output.stdout).trim().to_string();
+        if !proxy.is_empty() {
+            return Ok(Some(proxy));
+        }
+    }
+    
+    Ok(None)
+}
+
+#[tauri::command]
+fn clear_git_proxy() -> Result<(), String> {
+    Command::new("git")
+        .creation_flags(CREATE_NO_WINDOW)
+        .args(["config", "--global", "--unset", "http.proxy"])
+        .output()
+        .map_err(|e| format!("清除 HTTP 代理失败: {}", e))?;
+    
+    Command::new("git")
+        .creation_flags(CREATE_NO_WINDOW)
+        .args(["config", "--global", "--unset", "https.proxy"])
+        .output()
+        .map_err(|e| format!("清除 HTTPS 代理失败: {}", e))?;
+    
+    Ok(())
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -353,7 +407,10 @@ fn main() {
             load_app_config,
             save_app_config,
             write_text_file,
-            list_directories
+            list_directories,
+            set_git_proxy,
+            get_git_proxy,
+            clear_git_proxy
         ])
         .run(tauri::generate_context!())
         .expect("启动应用失败");

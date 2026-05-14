@@ -7,15 +7,54 @@
 - **前端框架**: React 18 + TypeScript
 - **桌面框架**: Tauri 2.0
 - **构建工具**: Vite
+- **版本管理**: Volta
 - **语言**: Rust (后端) + TypeScript (前端)
 
 ---
 
 ## 一、环境配置（从零开始）
 
-### 步骤 1：安装 Node.js
+### 步骤 1：安装 Volta（推荐）
+
+Volta 是一个跨平台的 JavaScript 工具管理器，可以自动管理 Node.js 和 npm 版本。
+
+**安装命令**：
+
+```bash
+# Windows (PowerShell)
+iwr https://get.volta.sh -UseBasicParsing | iex
+
+# macOS/Linux
+curl https://get.volta.sh | bash
+```
+
+**配置 Volta**：
+
+安装完成后，重启终端并验证：
+
+```bash
+volta --version
+```
+
+**Volta 配置**：
+
+项目已配置 Volta，自动使用指定版本：
+
+```json
+{
+  "volta": {
+    "node": "20.20.2"
+  }
+}
+```
+
+进入项目目录后，Volta 会自动切换到正确的 Node.js 版本。
+
+### 步骤 2：安装 Node.js（不使用 Volta）
 
 下载地址：https://nodejs.org/
+
+推荐版本：**Node.js 20.x**
 
 验证安装：
 ```bash
@@ -23,7 +62,7 @@ node -v
 npm -v
 ```
 
-### 步骤 2：安装 Rust
+### 步骤 3：安装 Rust
 
 下载地址：https://www.rustup.rs/
 
@@ -38,7 +77,7 @@ rustc -V
 cargo -V
 ```
 
-### 步骤 3：安装 Visual Studio Build Tools
+### 步骤 4：安装 Visual Studio Build Tools
 
 下载地址：https://visualstudio.microsoft.com/downloads/
 
@@ -46,7 +85,7 @@ cargo -V
 - **C++ 生成工具**
 - **Windows 11 SDK**（或 Windows 10 SDK）
 
-### 步骤 4：配置环境变量
+### 步骤 5：配置环境变量
 
 在 PowerShell 中设置临时环境变量：
 
@@ -61,7 +100,7 @@ $env:PATH = "$env:USERPROFILE\.cargo\bin;$env:PATH"
 > **查找 MSVC 路径方法**：
 > 打开 Visual Studio Installer → 修改 → C++ 生成工具 → 修改 → 复制工具链路径
 
-### 步骤 5：永久配置 PATH（可选）
+### 步骤 6：永久配置 PATH（可选）
 
 1. 按 `Win + R`，输入 `sysdm.cpl`
 2. 高级 → 环境变量 → 系统变量 → Path
