@@ -1,0 +1,216 @@
+.git-proxy-settings {
+  position: relative;
+}
+
+.git-proxy-toggle-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #d1d5db;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  color: #6b7280;
+  position: relative;
+}
+
+.git-proxy-toggle-btn:hover {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.proxy-indicator {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  background: #10b981;
+  border-radius: 50%;
+  border: 2px solid white;
+}
+
+.git-proxy-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  min-width: 280px;
+  padding: 16px;
+  z-index: 100;
+  animation: dropdownFadeIn 0.15s ease-out;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.git-proxy-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.git-proxy-header span {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1a1a1a;
+}
+
+.git-proxy-header .close-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: #f3f4f6;
+  color: #6b7280;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+
+.git-proxy-header .close-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.current-proxy {
+  margin-bottom: 12px;
+  padding: 10px;
+  background: #f0fdf4;
+  border-radius: 6px;
+  border: 1px solid #d1fae5;
+}
+
+.current-proxy-label {
+  font-size: 11px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.current-proxy-value {
+  font-size: 13px;
+  color: #059669;
+  font-weight: 600;
+  font-family: "Consolas", monospace;
+}
+
+.proxy-input-group {
+  margin-bottom: 12px;
+}
+
+.proxy-input-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.proxy-input-group input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  transition: border-color 0.2s;
+}
+
+.proxy-input-group input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.proxy-input-group input:disabled {
+  background: #f3f4f6;
+  cursor: not-allowed;
+}
+
+.set-proxy-btn {
+  padding: 8px 16px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.set-proxy-btn:hover:not(:disabled) {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.set-proxy-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.clear-proxy-btn {
+  width: 100%;
+  padding: 8px 12px;
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.clear-proxy-btn:hover:not(:disabled) {
+  background: #fecaca;
+  transform: translateY(-1px);
+}
+
+.clear-proxy-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.proxy-message {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  text-align: center;
+}
+
+.proxy-message.success {
+  background: #d1fae5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+.proxy-message.error {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}

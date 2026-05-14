@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import "./GitProxySettings.css";
 
 interface GitProxySettingsProps {
   initialExpanded?: boolean;

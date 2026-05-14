@@ -1,35 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { open, save } from "@tauri-apps/plugin-dialog";
+import { save } from "@tauri-apps/plugin-dialog";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
-import GitProxySettings from "./GitProxySettings";
-
-interface FileEntry {
-  name: string;
-  isDirectory: boolean;
-}
-
-interface ProjectCard {
-  id: string;
-  name: string;
-  sourcePath: string;
-  targetPath: string;
-  autoPull: boolean;
-  moveMode: "copy" | "cut";
-  clearTargetMode: "none" | "all" | "specific";
-  clearTargetFolders: string[];
-  clearTargetAllEntries: FileEntry[];
-  commitMode: "auto" | "manual" | "none";
-  status: "idle" | "copying" | "ready" | "committing" | "done" | "error";
-  message: string;
-  progress: number;
-}
+import { Header, ProjectTabs, ProjectCard, ProjectSidebar, DeleteConfirmModal, CommitModal } from "./components";
+import type { ProjectCardData, FileEntry } from "./components";
+import "./components/styles.css";
 
 interface AppConfig {
   version?: string;
   updatedAt?: string;
   exportedAt?: string;
-  projects: ProjectCard[];
+  projects: ProjectCardData[];
 }
 
 interface CopyProgress {
@@ -68,28 +49,21 @@ function formatTimestamp(): string {
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
+interface PendingCommit {
+  card: ProjectCardData;
+  commitMessage: string;
+}
+
 function App() {
-  const [cards, setCards] = useState<ProjectCard[]>([]);
+  const [cards, setCards] = useState<ProjectCardData[]>([]);
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showManualCommitModal, setShowManualCommitModal] = useState(false);
-  const [pendingCommit, setPendingCommit] = useState<{ card: ProjectCard; commitMessage: string } | null>(null);
-  const [pendingDelete, setPendingDelete] = useState<ProjectCard | null>(null);
+  const [pendingCommit, setPendingCommit] = useState<PendingCommit | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<ProjectCardData | null>(null);
   const [gitOutput, setGitOutput] = useState<string>("");
   const [fileOutput, setFileOutput] = useState<string>("");
-  const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const unlistenersRef = useRef<UnlistenFn[]>([]);
-  const settingsRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
-        setShowSettingsDropdown(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   useEffect(() => {
     loadConfig();
@@ -161,7 +135,7 @@ function App() {
     }
   };
 
-  const saveConfig = async (projects: ProjectCard[]) => {
+  const saveConfig = async (projects: ProjectCardData[]) => {
     try {
       const config: AppConfig = {
         version: "1.0",
@@ -175,7 +149,7 @@ function App() {
   };
 
   const addCard = async () => {
-    const newCard: ProjectCard = {
+    const newCard: ProjectCardData = {
       id: generateId(),
       name: `项目 ${cards.length + 1}`,
       sourcePath: "",
@@ -195,7 +169,7 @@ function App() {
     await saveConfig(updatedCards);
   };
 
-  const updateCard = async (id: string, updates: Partial<ProjectCard>) => {
+  const updateCard = async (id: string, updates: Partial<ProjectCardData>) => {
     const updatedCards = cards.map((card) =>
       card.id === id ? { ...card, ...updates } : card
     );
@@ -203,56 +177,16 @@ function App() {
     await saveConfig(updatedCards);
   };
 
-  const requestDeleteCard = (card: ProjectCard) => {
+  const requestDeleteCard = (card: ProjectCardData) => {
     setPendingDelete(card);
   };
 
   const confirmDeleteCard = async () => {
     if (!pendingDelete) return;
-    await deleteCard(pendingDelete.id);
-    setPendingDelete(null);
-  };
-
-  const deleteCard = async (id: string) => {
-    const updatedCards = cards.filter((card) => card.id !== id);
+    const updatedCards = cards.filter((card) => card.id !== pendingDelete.id);
     setCards(updatedCards);
     await saveConfig(updatedCards);
-  };
-
-  const selectSource = async (id: string) => {
-    try {
-      const selected = await open({ directory: true, multiple: false });
-      if (selected) {
-        await updateCard(id, { sourcePath: selected as string, status: "idle" });
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const selectTarget = async (id: string) => {
-    try {
-      const selected = await open({ directory: true, multiple: false });
-      if (selected) {
-        const newTargetPath = selected as string;
-        let allEntries: FileEntry[] = [];
-        try {
-          const result = await invoke<{name: string; isDirectory: boolean}[]>("list_directories", { path: newTargetPath });
-          console.log("list_directories result:", result);
-          allEntries = result.map(e => ({ name: e.name, isDirectory: e.isDirectory }));
-        } catch {
-        }
-        const currentCard = cards.find(c => c.id === id);
-        await updateCard(id, {
-          targetPath: newTargetPath,
-          status: "idle",
-          clearTargetAllEntries: allEntries,
-          clearTargetFolders: currentCard?.clearTargetMode === "specific" ? allEntries.filter(e => !currentCard.clearTargetFolders.includes(e.name)).map(e => e.name) : []
-        });
-      }
-    } catch (err) {
-      console.error(err);
-    }
+    setPendingDelete(null);
   };
 
   const executeCard = async (id: string) => {
@@ -316,7 +250,7 @@ function App() {
     }
   };
 
-  const confirmCommit = (card: ProjectCard) => {
+  const confirmCommit = (card: ProjectCardData) => {
     setPendingCommit({ card, commitMessage: `${card.name} - ${new Date().toLocaleString()}` });
     setShowConfirmModal(true);
   };
@@ -414,7 +348,7 @@ function App() {
           return;
         }
 
-        const importedCards: ProjectCard[] = config.projects.map((project: any) => ({
+        const importedCards: ProjectCardData[] = config.projects.map((project: any) => ({
           id: generateId(),
           name: project.name || `项目 ${cards.length + 1}`,
           sourcePath: project.sourcePath || "",
@@ -444,388 +378,51 @@ function App() {
     input.click();
   };
 
+  const handleManualCommitCancel = () => {
+    if (pendingCommit) {
+      updateCard(pendingCommit.card.id, { status: "ready", message: "文件处理完成，等待提交。", progress: 100 });
+    }
+    setShowManualCommitModal(false);
+  };
+
+  const activeCard = activeTab ? cards.find((c) => c.id === activeTab) : null;
+
   return (
     <div className="app-container">
-      <div className="app-header">
-        <h1 className="app-title">前端部署工具</h1>
-        <div className="header-actions">
-          <GitProxySettings />
-          <div className="settings-dropdown" ref={settingsRef}>
-            <button
-              className="settings-btn"
-              onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
-              title="设置"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="3"></circle>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-              </svg>
-            </button>
-            {showSettingsDropdown && (
-              <div className="dropdown-menu">
-                <button
-                  className="dropdown-item"
-                  onClick={() => {
-                    importConfig();
-                    setShowSettingsDropdown(false);
-                  }}
-                >
-                  导入配置
-                </button>
-                <button
-                  className="dropdown-item"
-                  onClick={() => {
-                    exportConfig();
-                    setShowSettingsDropdown(false);
-                  }}
-                  disabled={cards.length === 0}
-                >
-                  导出配置
-                </button>
-              </div>
-            )}
+      <Header
+        onImportConfig={importConfig}
+        onExportConfig={exportConfig}
+        hasProjects={cards.length > 0}
+      />
+
+      <ProjectTabs
+        projects={cards}
+        activeTab={activeTab}
+        onTabSelect={setActiveTab}
+        onAddProject={addCard}
+      />
+
+      {activeCard && (
+        <div className="project-detail">
+          <div className="project-main">
+            <ProjectCard
+              card={activeCard}
+              onUpdateCard={updateCard}
+              onDeleteCard={requestDeleteCard}
+              onExecute={executeCard}
+              onConfirmCommit={confirmCommit}
+              onReset={resetCard}
+            />
           </div>
+
+          <ProjectSidebar
+            fileOutput={fileOutput}
+            gitOutput={gitOutput}
+            onClearFileOutput={() => setFileOutput("")}
+            onClearGitOutput={() => setGitOutput("")}
+          />
         </div>
-      </div>
-
-      <div className="tabs-container">
-        <div className="tabs-list">
-          {cards.map((card) => (
-            <button
-              key={card.id}
-              className={`tab-item ${activeTab === card.id ? "active" : ""} ${card.status}`}
-              onClick={() => setActiveTab(card.id)}
-            >
-              <span className="tab-name">{card.name}</span>
-              <span className={`tab-status-dot ${card.status}`}></span>
-            </button>
-          ))}
-          <button className="tab-item add-tab" onClick={addCard}>
-            <span className="add-icon">+</span>
-            <span>添加项目</span>
-          </button>
-        </div>
-      </div>
-
-      {activeTab && cards.find((c) => c.id === activeTab) && (() => {
-        const card = cards.find((c) => c.id === activeTab)!;
-        return (
-          <div className="project-detail">
-            <div className="project-main">
-              <div className={`project-card ${card.status}`}>
-                <div className="card-header">
-                  <input
-                    type="text"
-                    className="card-name-input"
-                    value={card.name}
-                    onChange={(event) => updateCard(card.id, { name: event.target.value })}
-                  />
-                  <button
-                    className="card-delete-btn"
-                    onClick={() => requestDeleteCard(card)}
-                    disabled={card.status === "copying" || card.status === "committing"}
-                    title="删除项目"
-                  >
-                    x
-                  </button>
-                </div>
-
-                <div className="card-paths">
-                  <div className="path-section">
-                    <div className="section-header">源目录</div>
-                    <div className="path-row">
-                      <button className="path-btn full-width" onClick={() => selectSource(card.id)}>
-                        {card.sourcePath ? "更换目录" : "选择目录"}
-                      </button>
-                    </div>
-                    <div className="path-display" title={card.sourcePath}>
-                      {card.sourcePath || "未选择"}
-                    </div>
-                    <div className="section-hint">前端 dist 文件夹</div>
-                  </div>
-
-                  <div className="path-section">
-                    <div className="section-header">目标目录</div>
-                    <div className="path-row">
-                      <button className="path-btn full-width" onClick={() => selectTarget(card.id)}>
-                        {card.targetPath ? "更换目录" : "选择目录"}
-                      </button>
-                    </div>
-                    <div className="path-display" title={card.targetPath}>
-                      {card.targetPath || "未选择"}
-                    </div>
-                    <div className="section-hint">Git 仓库目录</div>
-
-                    <div className="section-options">
-                      <div className="option-item">
-                        <label className="checkbox-label">
-                          <input
-                            type="checkbox"
-                            checked={card.autoPull}
-                            onChange={(event) => updateCard(card.id, { autoPull: event.target.checked })}
-                          />
-                          <span>执行前先 git pull</span>
-                        </label>
-                      </div>
-
-                      <div className="option-item">
-                        <span className="radio-group-label">操作前清空目标目录：</span>
-                        <div className="radio-group-inline">
-                          <label className="radio-label">
-                            <input
-                              type="radio"
-                              name={`clearTargetMode-${card.id}`}
-                              value="none"
-                              checked={card.clearTargetMode === "none"}
-                              onChange={() => updateCard(card.id, { clearTargetMode: "none", clearTargetFolders: [] })}
-                            />
-                            <span>不删除</span>
-                          </label>
-                          <label className="radio-label">
-                            <input
-                              type="radio"
-                              name={`clearTargetMode-${card.id}`}
-                              value="all"
-                              checked={card.clearTargetMode === "all"}
-                              onChange={() => updateCard(card.id, { clearTargetMode: "all", clearTargetFolders: [] })}
-                            />
-                            <span>全部目录</span>
-                          </label>
-                          <label className="radio-label">
-                            <input
-                              type="radio"
-                              name={`clearTargetMode-${card.id}`}
-                              value="specific"
-                              checked={card.clearTargetMode === "specific"}
-                              onChange={() => {
-                                if (card.targetPath) {
-                                  invoke<{name: string; isDirectory: boolean}[]>("list_directories", { path: card.targetPath }).then((entries) => {
-                                    const allEntries = entries.map(e => ({ name: e.name, isDirectory: e.isDirectory }));
-                                    updateCard(card.id, {
-                                      clearTargetMode: "specific",
-                                      clearTargetAllEntries: allEntries,
-                                      clearTargetFolders: allEntries.map(e => e.name)
-                                    });
-                                  }).catch(console.error);
-                                } else {
-                                  updateCard(card.id, {
-                                    clearTargetMode: "specific",
-                                    clearTargetAllEntries: [],
-                                    clearTargetFolders: []
-                                  });
-                                }
-                              }}
-                            />
-                            <span>指定文件</span>
-                          </label>
-                        </div>
-                      </div>
-
-                      {card.clearTargetMode === "specific" && (
-                        <div className="folder-selection">
-                          <div className="folder-selection-header">
-                            <span>选择要删除的文件/文件夹：</span>
-                            <button
-                              className="refresh-folders-btn"
-                              onClick={async () => {
-                                if (card.targetPath) {
-                                  try {
-                                    const entries = await invoke<{name: string; isDirectory: boolean}[]>("list_directories", { path: card.targetPath });
-                                    const allEntries = entries.map(e => ({ name: e.name, isDirectory: e.isDirectory }));
-                                    const selectedSet = new Set(card.clearTargetFolders);
-                                    const newEntries = allEntries.filter(e => selectedSet.has(e.name) || !card.clearTargetAllEntries.some(ex => ex.name === e.name));
-                                    const combinedAll = [...card.clearTargetAllEntries, ...newEntries].filter((e, i, arr) => arr.findIndex(x => x.name === e.name) === i);
-                                    combinedAll.sort((a, b) => {
-                                      if (a.isDirectory !== b.isDirectory) return b.isDirectory ? 1 : -1;
-                                      return a.name.localeCompare(b.name);
-                                    });
-                                    updateCard(card.id, {
-                                      clearTargetAllEntries: combinedAll,
-                                      clearTargetFolders: card.clearTargetFolders.filter(f => combinedAll.some(e => e.name === f))
-                                    });
-                                  } catch (err) {
-                                    console.error("获取目录失败:", err);
-                                  }
-                                }
-                              }}
-                            >
-                              刷新
-                            </button>
-                          </div>
-                          <div className="folder-list">
-                            {card.clearTargetAllEntries.length === 0 ? (
-                              <div className="folder-list-empty">目标目录为空</div>
-                            ) : (
-                              card.clearTargetAllEntries.map((entry) => {
-                                const isSelected = card.clearTargetFolders.includes(entry.name);
-                                return (
-                                  <label key={entry.name} className={`folder-checkbox-label ${!isSelected ? 'unselected' : ''}`}>
-                                    <input
-                                      type="checkbox"
-                                      checked={isSelected}
-                                      onChange={(event) => {
-                                        const newFolders = event.target.checked
-                                          ? [...card.clearTargetFolders, entry.name]
-                                          : card.clearTargetFolders.filter(f => f !== entry.name);
-                                        updateCard(card.id, { clearTargetFolders: newFolders });
-                                      }}
-                                    />
-                                    <span className="entry-icon">{entry.isDirectory ? '📁' : '📄'}</span>
-                                    <span>{entry.name}</span>
-                                  </label>
-                                );
-                              })
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="option-item">
-                        <span className="radio-group-label">提交方式：</span>
-                        <div className="radio-group-inline">
-                          <label className="radio-label">
-                            <input
-                              type="radio"
-                              name={`commitMode-${card.id}`}
-                              value="auto"
-                              checked={card.commitMode === "auto"}
-                              onChange={() => updateCard(card.id, { commitMode: "auto" })}
-                            />
-                            <span>自动提交并推送</span>
-                          </label>
-                          <label className="radio-label">
-                            <input
-                              type="radio"
-                              name={`commitMode-${card.id}`}
-                              value="manual"
-                              checked={card.commitMode === "manual"}
-                              onChange={() => updateCard(card.id, { commitMode: "manual" })}
-                            />
-                            <span>手动填写 Commit</span>
-                          </label>
-                          <label className="radio-label">
-                            <input
-                              type="radio"
-                              name={`commitMode-${card.id}`}
-                              value="none"
-                              checked={card.commitMode === "none"}
-                              onChange={() => updateCard(card.id, { commitMode: "none" })}
-                            />
-                            <span>只处理文件，不提交</span>
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="path-section">
-                    <div className="section-header">文件操作方式</div>
-                    <div className="radio-group">
-                      <label className="radio-label">
-                        <input
-                          type="radio"
-                          name={`moveMode-${card.id}`}
-                          value="copy"
-                          checked={card.moveMode === "copy"}
-                          onChange={() => updateCard(card.id, { moveMode: "copy" })}
-                        />
-                        <span>复制</span>
-                      </label>
-                      <label className="radio-label">
-                        <input
-                          type="radio"
-                          name={`moveMode-${card.id}`}
-                          value="cut"
-                          checked={card.moveMode === "cut"}
-                          onChange={() => updateCard(card.id, { moveMode: "cut" })}
-                        />
-                        <span>剪切</span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="card-status">
-                  <span className={`status-badge ${card.status}`}>{getStatusText(card.status)}</span>
-                  {card.message && <div className="status-message">{card.message}</div>}
-                  {card.status === "copying" && (
-                    <div className="progress-bar-container">
-                      <div className="progress-bar" style={{ width: `${card.progress}%` }} />
-                    </div>
-                  )}
-                </div>
-
-                <div className="card-actions">
-                  {card.status === "idle" && (
-                    <button
-                      className="action-btn execute-btn"
-                      onClick={() => executeCard(card.id)}
-                      disabled={!card.sourcePath || !card.targetPath}
-                    >
-                      开始执行
-                    </button>
-                  )}
-                  {card.status === "ready" && card.commitMode !== "none" && (
-                    <button className="action-btn confirm-btn" onClick={() => confirmCommit(card)}>
-                      填写并提交
-                    </button>
-                  )}
-                  {card.status === "ready" && card.commitMode === "none" && (
-                    <button className="action-btn reset-btn" onClick={() => resetCard(card.id)}>
-                      重置
-                    </button>
-                  )}
-                  {(card.status === "done" || card.status === "error") && (
-                    <button className="action-btn reset-btn" onClick={() => resetCard(card.id)}>
-                      {card.status === "error" ? "重试" : "重置"}
-                    </button>
-                  )}
-                  {card.status === "copying" && (
-                    <button className="action-btn execute-btn" disabled>
-                      执行中...
-                    </button>
-                  )}
-                  {card.status === "committing" && (
-                    <button className="action-btn confirm-btn" disabled>
-                      提交中...
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="project-sidebar">
-              <div className="sidebar-section">
-                <div className="sidebar-header">
-                  <span>文件操作日志</span>
-                  <button className="sidebar-clear-btn" onClick={() => setFileOutput("")}>清除</button>
-                </div>
-                <div className="sidebar-content log-content">
-                  {fileOutput ? (
-                    <pre className="log-output file-log-output">{fileOutput}</pre>
-                  ) : (
-                    <div className="sidebar-empty">暂无文件操作记录</div>
-                  )}
-                </div>
-              </div>
-
-              <div className="sidebar-section">
-                <div className="sidebar-header">
-                  <span>Git 操作日志</span>
-                  <button className="sidebar-clear-btn" onClick={() => setGitOutput("")}>清除</button>
-                </div>
-                <div className="sidebar-content log-content">
-                  {gitOutput ? (
-                    <pre className="log-output">{gitOutput}</pre>
-                  ) : (
-                    <div className="sidebar-empty">暂无Git操作记录</div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+      )}
 
       {cards.length === 0 && (
         <div className="empty-state">
@@ -834,106 +431,35 @@ function App() {
       )}
 
       {pendingDelete && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h3>确认删除项目</h3>
-            <p>将从列表中删除“{pendingDelete.name}”。此操作只删除应用里的项目配置，不会删除源目录或目标目录中的文件。</p>
-            <div className="modal-path">
-              <small>源目录: {pendingDelete.sourcePath || "未选择"}</small>
-              <br />
-              <small>目标目录: {pendingDelete.targetPath || "未选择"}</small>
-            </div>
-            <div className="modal-actions">
-              <button className="action-btn cancel-btn" onClick={() => setPendingDelete(null)}>
-                取消
-              </button>
-              <button className="action-btn danger-btn" onClick={confirmDeleteCard}>
-                确认删除
-              </button>
-            </div>
-          </div>
-        </div>
+        <DeleteConfirmModal
+          project={pendingDelete}
+          onConfirm={confirmDeleteCard}
+          onCancel={() => setPendingDelete(null)}
+        />
       )}
 
       {showManualCommitModal && pendingCommit && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h3>输入 Commit 信息</h3>
-            <p>项目: {pendingCommit.card.name}</p>
-            <div className="modal-path">
-              <small>目标: {pendingCommit.card.targetPath}</small>
-            </div>
-            <div className="modal-commit-section">
-              <label>Commit 消息:</label>
-              <input
-                type="text"
-                className="commit-input"
-                value={pendingCommit.commitMessage}
-                onChange={(event) =>
-                  setPendingCommit({ ...pendingCommit, commitMessage: event.target.value })
-                }
-                autoFocus
-              />
-            </div>
-            <div className="modal-actions">
-              <button className="action-btn cancel-btn" onClick={() => {
-                setShowManualCommitModal(false);
-                updateCard(pendingCommit.card.id, { status: "ready", message: "文件处理完成，等待提交。", progress: 100 });
-              }}>
-                取消
-              </button>
-              <button className="action-btn confirm-btn" onClick={executeManualCommit}>
-                确认并提交
-              </button>
-            </div>
-          </div>
-        </div>
+        <CommitModal
+          pendingCommit={pendingCommit}
+          onCommit={(card, message) => {
+            setPendingCommit({ card, commitMessage: message });
+            executeManualCommit();
+          }}
+          onCancel={handleManualCommitCancel}
+          isManual={true}
+          onCancelWithStatus={handleManualCommitCancel}
+        />
       )}
 
       {showConfirmModal && pendingCommit && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h3>确认 Git 提交</h3>
-            <p>项目: {pendingCommit.card.name}</p>
-            <div className="modal-path">
-              <small>目标: {pendingCommit.card.targetPath}</small>
-            </div>
-            <div className="modal-commit-section">
-              <label>Commit 消息:</label>
-              <input
-                type="text"
-                className="commit-input"
-                value={pendingCommit.commitMessage}
-                onChange={(event) =>
-                  setPendingCommit({ ...pendingCommit, commitMessage: event.target.value })
-                }
-              />
-            </div>
-            <div className="modal-actions">
-              <button className="action-btn cancel-btn" onClick={() => setShowConfirmModal(false)}>
-                取消
-              </button>
-              <button className="action-btn confirm-btn" onClick={executeCommit}>
-                确认并推送
-              </button>
-            </div>
-          </div>
-        </div>
+        <CommitModal
+          pendingCommit={pendingCommit}
+          onCommit={() => executeCommit()}
+          onCancel={() => setShowConfirmModal(false)}
+        />
       )}
     </div>
   );
-}
-
-function getStatusText(status: string): string {
-  const map: Record<string, string> = {
-    idle: "待执行",
-    copying: "执行中",
-    ready: "待确认",
-    committing: "提交中",
-    done: "已完成",
-    error: "错误",
-  };
-  return map[status] || status;
 }
 
 export default App;
