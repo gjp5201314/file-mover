@@ -314,37 +314,62 @@ export const projectService = {
    * - N = 现有项目数量 + 索引 + 1
    */
   parseImportConfig(text: string, existingCardsLength: number): ProjectCardData[] {
-    const config = JSON.parse(text) as { projects?: ImportedProject[] };
-
-    if (!config.projects || !Array.isArray(config.projects)) {
-      throw new Error("配置文件格式无效");
+    let config: { projects?: ImportedProject[] };
+    try {
+      config = JSON.parse(text);
+    } catch (err) {
+      throw new Error("配置文件格式无效：JSON 解析失败");
     }
 
-    return config.projects.map((project: ImportedProject, index: number) => ({
-      id: generateId(),
-      // 名称：优先使用原名称，否则生成 "项目 N"
-      name: project.name || `项目 ${existingCardsLength + index + 1}`,
-      sourcePath: project.sourcePath || "",
-      targetPath: project.targetPath || "",
-      // autoPull 默认 true（安全考虑：部署前同步远程）
-      autoPull: project.autoPull ?? true,
-      moveMode: project.moveMode || "copy",
-      // 迁移：clearTarget 布尔值 -> clearTargetMode 枚举
-      clearTargetMode: project.clearTargetMode || (project.clearTarget ? "all" : "none"),
-      clearTargetFolders: project.clearTargetFolders || [],
-      // 兼容字符串格式的 entry
-      clearTargetAllEntries: (project.clearTargetAllEntries || []).map((e: RawFileEntry): FileEntry => ({
-        name: typeof e === 'string' ? e : (e.name || String(e)),
-        isDirectory: e.isDirectory ?? true
-      })),
-      // 迁移：autoCommit -> commitMode
-      // autoCommit === false 等同于 commitMode === "none"
-      commitMode: project.commitMode || (project.autoCommit === false ? "none" : "auto"),
-      // 运行时状态：初始化为默认值
-      status: "idle" as const,
-      message: "",
-      progress: 0,
-    }));
+    if (!config.projects) {
+      throw new Error("配置文件格式无效：缺少 projects 字段");
+    }
+    
+    if (!Array.isArray(config.projects)) {
+      throw new Error("配置文件格式无效：projects 必须是数组");
+    }
+    
+    if (config.projects.length === 0) {
+      throw new Error("配置文件为空：没有项目可以导入");
+    }
+
+    return config.projects.map((project: ImportedProject, index: number) => {
+      if (!project.sourcePath || typeof project.sourcePath !== 'string') {
+        throw new Error(`项目 ${index + 1}：源路径无效`);
+      }
+      
+      if (!project.targetPath || typeof project.targetPath !== 'string') {
+        throw new Error(`项目 ${index + 1}：目标路径无效`);
+      }
+      
+      const name = project.name?.trim() || `项目 ${existingCardsLength + index + 1}`;
+      if (name.length > 100) {
+        throw new Error(`项目 ${index + 1}：名称过长（最大 100 个字符）`);
+      }
+      
+      const moveMode = project.moveMode === "cut" ? "cut" : "copy";
+      const clearTargetMode = project.clearTargetMode || (project.clearTarget ? "all" : "none");
+      const commitMode = project.commitMode || (project.autoCommit === false ? "none" : "auto");
+      
+      return {
+        id: generateId(),
+        name,
+        sourcePath: project.sourcePath,
+        targetPath: project.targetPath,
+        autoPull: project.autoPull ?? true,
+        moveMode,
+        clearTargetMode,
+        clearTargetFolders: Array.isArray(project.clearTargetFolders) ? project.clearTargetFolders : [],
+        clearTargetAllEntries: (project.clearTargetAllEntries || []).map((e: RawFileEntry): FileEntry => ({
+          name: typeof e === 'string' ? e : (e.name || String(e)),
+          isDirectory: e.isDirectory ?? true
+        })),
+        commitMode,
+        status: "idle" as const,
+        message: "",
+        progress: 0,
+      };
+    });
   }
 };
 
@@ -369,5 +394,8 @@ export const projectService = {
  * - 不适合高并发场景
  */
 function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+  const timestamp = Date.now().toString(36);
+  const randomPart = crypto.getRandomValues(new Uint8Array(8))
+    .reduce((str, byte) => str + byte.toString(36).padStart(2, '0'), '');
+  return `${timestamp}_${randomPart}`;
 }

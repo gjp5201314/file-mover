@@ -8,12 +8,33 @@
     "dialog:default",
     "dialog:allow-open",
     "dialog:allow-save",
-    "fs:default",
-    "fs:allow-appdata-read",
-    "fs:allow-appdata-write",
-    "fs:allow-appdata-read-recursive",
-    "fs:allow-appdata-write-recursive",
-    "fs:allow-exe-read",
-    "fs:allow-exe-write"
+    {
+      "identifier": "fs:allow-read",
+      "allow": [
+        {
+          "path": "$APPDATA/**/*"
+        },
+        {
+          "path": "$EXE/**/*"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-write",
+      "allow": [
+        {
+          "path": "$APPDATA/**/*"
+        },
+        {
+          "path": "$EXE/**/*"
+        }
+      ]
+    },
+    "fs:allow-exists",
+    "fs:allow-mkdir",
+    "fs:allow-remove",
+    "fs:allow-rename",
+    "fs:allow-copy-file",
+    "fs:allow-read-dir"
   ]
 }

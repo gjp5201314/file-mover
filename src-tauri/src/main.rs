@@ -12,6 +12,147 @@ const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 const CONFIG_FILE_NAME: &str = "frontend-deployer-config.json";
 
+const FORBIDDEN_PATHS: &[&str] = &[
+    "C:\\Windows",
+    "C:\\Program Files",
+    "C:\\Program Files (x86)",
+    "C:\\System32",
+    "C:\\Boot",
+    "C:\\Recovery",
+];
+
+#[derive(Debug, Clone)]
+struct SecurityAuditEvent {
+    timestamp: String,
+    event_type: String,
+    details: String,
+    success: bool,
+}
+
+impl SecurityAuditEvent {
+    fn new(event_type: &str, details: &str, success: bool) -> Self {
+        Self {
+            timestamp: chrono_lite_timestamp(),
+            event_type: event_type.to_string(),
+            details: details.to_string(),
+            success,
+        }
+    }
+    
+    fn log(&self) {
+        let status = if self.success { "成功" } else { "失败" };
+        eprintln!(
+            "[SECURITY] [{}] {} - {}: {}",
+            self.timestamp, status, self.event_type, self.details
+        );
+    }
+}
+
+fn chrono_lite_timestamp() -> String {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let duration = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default();
+    let secs = duration.as_secs();
+    let hours = (secs / 3600) % 24;
+    let minutes = (secs / 60) % 60;
+    let seconds = secs % 60;
+    format!("{:02}:{:02}:{:02}", hours, minutes, seconds)
+}
+
+fn is_path_safe(path: &Path) -> Result<(), String> {
+    let canonical = std::fs::canonicalize(path)
+        .map_err(|e| format!("无法解析路径: {}", e))?;
+    
+    let canonical_str = canonical.to_string_lossy().to_lowercase();
+    
+    for forbidden in FORBIDDEN_PATHS {
+        let forbidden_lower = forbidden.to_lowercase();
+        if canonical_str.starts_with(&forbidden_lower) {
+            SecurityAuditEvent::new(
+                "PATH_BLOCKED",
+                &format!("尝试访问禁止的系统目录: {}", forbidden),
+                false
+            ).log();
+            return Err(format!("禁止访问系统目录: {}", forbidden));
+        }
+    }
+    
+    if path.is_symlink() {
+        SecurityAuditEvent::new(
+            "SYMLINK_BLOCKED",
+            &format!("尝试操作符号链接: {:?}", path),
+            false
+        ).log();
+        return Err("禁止操作符号链接".to_string());
+    }
+    
+    Ok(())
+}
+
+fn validate_source_target_paths(source: &Path, target: &Path) -> Result<(), String> {
+    if !source.exists() {
+        SecurityAuditEvent::new(
+            "SOURCE_NOT_FOUND",
+            &format!("源目录不存在: {:?}", source),
+            false
+        ).log();
+        return Err("源目录不存在".to_string());
+    }
+    
+    if !source.is_dir() {
+        SecurityAuditEvent::new(
+            "SOURCE_NOT_DIR",
+            &format!("源路径不是目录: {:?}", source),
+            false
+        ).log();
+        return Err("源路径不是目录".to_string());
+    }
+    
+    is_path_safe(source)?;
+    is_path_safe(target)?;
+    
+    let source_canonical = std::fs::canonicalize(source)
+        .map_err(|e| format!("无法解析源路径: {}", e))?;
+    let target_canonical = std::fs::canonicalize(target)
+        .map_err(|e| format!("无法解析目标路径: {}", e))?;
+    
+    if source_canonical == target_canonical {
+        SecurityAuditEvent::new(
+            "SAME_PATH",
+            "源目录和目标目录相同",
+            false
+        ).log();
+        return Err("源目录和目标目录不能相同".to_string());
+    }
+    
+    if target_canonical.starts_with(&source_canonical) {
+        SecurityAuditEvent::new(
+            "INVALID_NESTING",
+            "目标目录是源目录的子目录",
+            false
+        ).log();
+        return Err("目标目录不能是源目录的子目录".to_string());
+    }
+    
+    if source_canonical.starts_with(&target_canonical) {
+        SecurityAuditEvent::new(
+            "INVALID_NESTING",
+            "源目录是目标目录的子目录",
+            false
+        ).log();
+        return Err("源目录不能是目标目录的子目录（当移动模式时可能导致数据丢失）".to_string());
+    }
+    
+    SecurityAuditEvent::new(
+        "PATH_VALIDATION",
+        &format!("路径验证通过: {:?} -> {:?}", source, target),
+        true
+    ).log();
+    
+    Ok(())
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CopyProgress {
@@ -91,7 +232,9 @@ async fn git_pull(
     card_id: String,
 ) -> Result<String, String> {
     let target_path = Path::new(&target);
-
+    
+    is_path_safe(target_path)?;
+    
     if !target_path.exists() {
         return Err("目标目录不存在".to_string());
     }
@@ -129,20 +272,29 @@ async fn copy_and_prepare(
 ) -> Result<String, String> {
     let source_path = Path::new(&source);
     let target_path = Path::new(&target);
-
+    
+    validate_source_target_paths(source_path, target_path)?;
+    
+    SecurityAuditEvent::new(
+        "FILE_OPERATION_START",
+        &format!(
+            "开始文件操作: 模式={}, 清空={}, 提交={}, 源={}, 目标={}",
+            move_mode, clear_target_mode,
+            if auto_pull { "pull+push" } else { "none" },
+            source, target
+        ),
+        true
+    ).log();
+    
+    if !target_path.exists() {
+        fs::create_dir_all(target_path).map_err(|e| e.to_string())?;
+    }
+    
     let _ = app.emit("file-operation-log", FileOperationLog {
         card_id: card_id.clone(),
         operation: "info".to_string(),
         message: format!("📋 开始文件部署任务\n源目录: {}\n目标目录: {}", source, target),
     });
-
-    if !source_path.exists() {
-        return Err("源目录不存在".to_string());
-    }
-
-    if !target_path.exists() {
-        fs::create_dir_all(target_path).map_err(|e| e.to_string())?;
-    }
 
     if auto_pull {
         let _ = app.emit("file-operation-log", FileOperationLog {
@@ -224,6 +376,15 @@ async fn copy_and_prepare(
     });
 
     copy_dir_recursive(source_path, target_path, is_cut)?;
+    
+    SecurityAuditEvent::new(
+        "FILE_OPERATION_COMPLETE",
+        &format!(
+            "文件操作完成: {} {} -> {}, 清空={}",
+            operation_desc, source, target, clear_mode_desc
+        ),
+        true
+    ).log();
 
     let _ = app.emit("file-operation-log", FileOperationLog {
         card_id: card_id.clone(),
@@ -250,10 +411,49 @@ async fn git_commit_push(
     card_id: String,
 ) -> Result<(), String> {
     let target_path = Path::new(&target);
-
+    
+    is_path_safe(target_path)?;
+    
     if !target_path.exists() {
+        SecurityAuditEvent::new(
+            "GIT_OPERATION",
+            "Git 操作失败：目标目录不存在",
+            false
+        ).log();
         return Err("目标目录不存在".to_string());
     }
+    
+    let trimmed_message = message.trim();
+    if trimmed_message.is_empty() {
+        SecurityAuditEvent::new(
+            "GIT_OPERATION",
+            "Git 操作失败：Commit 消息为空",
+            false
+        ).log();
+        return Err("Commit 消息不能为空".to_string());
+    }
+    if trimmed_message.len() > 500 {
+        SecurityAuditEvent::new(
+            "GIT_OPERATION",
+            "Git 操作失败：Commit 消息过长",
+            false
+        ).log();
+        return Err("Commit 消息过长（最大 500 个字符）".to_string());
+    }
+    if trimmed_message.contains('\0') {
+        SecurityAuditEvent::new(
+            "GIT_OPERATION",
+            "Git 操作失败：Commit 消息包含非法字符",
+            false
+        ).log();
+        return Err("Commit 消息包含非法字符".to_string());
+    }
+    
+    SecurityAuditEvent::new(
+        "GIT_COMMIT_PUSH",
+        &format!("开始 Git 提交: 消息={}", trimmed_message),
+        true
+    ).log();
 
     let git_add_output = Command::new("git")
         .creation_flags(CREATE_NO_WINDOW)
@@ -274,7 +474,7 @@ async fn git_commit_push(
 
     let git_commit_output = Command::new("git")
         .creation_flags(CREATE_NO_WINDOW)
-        .args(["-C", &target, "commit", "-m", &message])
+        .args(["-C", &target, "commit", "-m", &trimmed_message])
         .output()
         .map_err(|e| format!("git commit 失败: {}", e))?;
 
@@ -306,8 +506,19 @@ async fn git_commit_push(
     });
 
     if !git_push_output.status.success() {
+        SecurityAuditEvent::new(
+            "GIT_PUSH",
+            &format!("Git push 失败: {}", push_err),
+            false
+        ).log();
         return Err(format!("git push 失败: {}", push_err));
     }
+
+    SecurityAuditEvent::new(
+        "GIT_COMMIT_PUSH_COMPLETE",
+        &format!("Git 提交和推送成功: {}", trimmed_message),
+        true
+    ).log();
 
     Ok(())
 }
@@ -333,6 +544,9 @@ struct DirEntry {
 #[tauri::command]
 fn list_directories(path: String) -> Result<Vec<DirEntry>, String> {
     let target_path = Path::new(&path);
+    
+    is_path_safe(target_path)?;
+    
     if !target_path.exists() {
         return Err("目录不存在".to_string());
     }
@@ -427,11 +641,17 @@ fn save_app_config(_app: tauri::AppHandle, config: serde_json::Value) -> Result<
 
 #[tauri::command]
 fn write_text_file(path: String, contents: String) -> Result<(), String> {
+    let file_path = Path::new(&path);
+    is_path_safe(file_path)?;
     fs::write(&path, contents).map_err(|e| format!("写入文件失败: {}", e))
 }
 
 #[tauri::command]
 fn set_git_proxy(port: u16) -> Result<(), String> {
+    if port < 1 || port > 65535 {
+        return Err("端口号无效（范围：1-65535）".to_string());
+    }
+    
     let proxy_url = format!("http://127.0.0.1:{}", port);
     
     Command::new("git")

@@ -150,7 +150,10 @@ function formatTimestamp(): string {
  * @description 与 projectService.generateId 保持一致
  */
 function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+  const timestamp = Date.now().toString(36);
+  const randomPart = crypto.getRandomValues(new Uint8Array(8))
+    .reduce((str, byte) => str + byte.toString(36).padStart(2, '0'), '');
+  return `${timestamp}_${randomPart}`;
 }
 
 /**
