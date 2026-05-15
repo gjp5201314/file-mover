@@ -484,6 +484,56 @@ fn clear_git_proxy() -> Result<(), String> {
     Ok(())
 }
 
+const AUTOSTART_REG_KEY: &str = r"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run";
+const AUTOSTART_APP_NAME: &str = "FileMover";
+
+#[tauri::command]
+fn get_autostart() -> Result<bool, String> {
+    let output = Command::new("reg")
+        .creation_flags(CREATE_NO_WINDOW)
+        .args(["query", AUTOSTART_REG_KEY, "/v", AUTOSTART_APP_NAME])
+        .output()
+        .map_err(|e| format!("查询开机启动状态失败: {}", e))?;
+    
+    Ok(output.status.success())
+}
+
+#[tauri::command]
+fn set_autostart(enabled: bool) -> Result<(), String> {
+    if enabled {
+        let exe_path = std::env::current_exe()
+            .map_err(|e| format!("获取程序路径失败: {}", e))?;
+        
+        let exe_path_str = exe_path.to_string_lossy().to_string();
+        
+        Command::new("reg")
+            .creation_flags(CREATE_NO_WINDOW)
+            .args([
+                "add",
+                AUTOSTART_REG_KEY,
+                "/v", AUTOSTART_APP_NAME,
+                "/t", "REG_SZ",
+                "/d", &exe_path_str,
+                "/f"
+            ])
+            .output()
+            .map_err(|e| format!("添加开机启动失败: {}", e))?;
+    } else {
+        Command::new("reg")
+            .creation_flags(CREATE_NO_WINDOW)
+            .args([
+                "delete",
+                AUTOSTART_REG_KEY,
+                "/v", AUTOSTART_APP_NAME,
+                "/f"
+            ])
+            .output()
+            .map_err(|e| format!("移除开机启动失败: {}", e))?;
+    }
+    
+    Ok(())
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -500,7 +550,9 @@ fn main() {
             list_directories,
             set_git_proxy,
             get_git_proxy,
-            clear_git_proxy
+            clear_git_proxy,
+            get_autostart,
+            set_autostart
         ])
         .run(tauri::generate_context!())
         .expect("启动应用失败");

@@ -26,3 +26,5 @@ export { default as ProjectSidebar } from "./ProjectSidebar";
 export { default as DeleteConfirmModal } from "./DeleteConfirmModal";
 export { default as CommitModal } from "./CommitModal";
 export { default as GitProxySettings } from "./GitProxySettings";
+export { default as AutoStartSettings } from "./AutoStartSettings";
+export { default as SettingsDrawer } from "./SettingsDrawer";

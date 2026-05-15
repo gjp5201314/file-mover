@@ -20,9 +20,10 @@
  * - 根据状态显示不同的模态框
  */
 
-import { Header, ProjectTabs, ProjectCard, ProjectSidebar, DeleteConfirmModal, CommitModal } from "./components";
+import { Header, ProjectTabs, ProjectCard, ProjectSidebar, DeleteConfirmModal, CommitModal, SettingsDrawer } from "./components";
 import { ProjectProvider, useProject } from "./context/ProjectContext";
 import "./components/styles.css";
+import { useState } from "react";
 
 /**
  * 应用内容组件
@@ -56,14 +57,13 @@ function AppContent() {
     importConfig,
     exportConfig,
   } = useProject();
+  const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
 
   return (
     <div className="app-container">
       {/* 顶部导航栏 */}
       <Header
-        onImportConfig={importConfig}
-        onExportConfig={exportConfig}
-        hasProjects={cards.length > 0}
+        onOpenSettings={() => setShowSettingsDrawer(true)}
       />
 
       {/* 项目标签页 */}
@@ -137,6 +137,15 @@ function AppContent() {
           onCancel={() => setShowConfirmModal(false)}
         />
       )}
+
+      {/* 设置抽屉 */}
+      <SettingsDrawer
+        isOpen={showSettingsDrawer}
+        onClose={() => setShowSettingsDrawer(false)}
+        onImport={importConfig}
+        onExport={exportConfig}
+        hasProjects={cards.length > 0}
+      />
     </div>
   );
 }
