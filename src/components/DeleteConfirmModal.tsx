@@ -1,12 +1,40 @@
-import "./DeleteConfirmModal.css";
-import { ProjectCardData } from "./ProjectCard";
+/**
+ * DeleteConfirmModal 组件
+ *
+ * 删除项目确认对话框
+ *
+ * 功能：
+ * - 显示删除确认信息
+ * - 展示项目的基本信息（名称、路径）
+ * - 提供确认/取消操作
+ *
+ * 安全提示：
+ * - 说明只删除应用配置，不删除实际文件
+ */
 
+import "./DeleteConfirmModal.css";
+import type { ProjectCardData } from "../types";
+
+/**
+ * DeleteConfirmModal 组件 Props
+ * @interface DeleteConfirmModalProps
+ */
 interface DeleteConfirmModalProps {
+  /** 要删除的项目数据 */
   project: ProjectCardData;
+  /** 确认删除回调 */
   onConfirm: () => void;
+  /** 取消删除回调 */
   onCancel: () => void;
 }
 
+/**
+ * DeleteConfirmModal 组件
+ *
+ * @param project - 要删除的项目
+ * @param onConfirm - 确认回调
+ * @param onCancel - 取消回调
+ */
 export default function DeleteConfirmModal({ project, onConfirm, onCancel }: DeleteConfirmModalProps) {
   return (
     <div className="modal-overlay">

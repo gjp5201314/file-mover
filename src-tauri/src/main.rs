@@ -21,6 +21,21 @@ pub struct CopyProgress {
     pub card_id: String,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct FileOperationLog {
+    pub card_id: String,
+    pub operation: String,
+    pub message: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct GitOutput {
+    pub card_id: String,
+    pub output: String,
+}
+
 fn remove_dir_all_recursive(path: &Path) -> Result<(), String> {
     if path.is_dir() {
         for entry in fs::read_dir(path).map_err(|e| e.to_string())? {
@@ -73,7 +88,7 @@ fn copy_dir_recursive(src: &Path, dst: &Path, is_cut: bool) -> Result<(), String
 async fn git_pull(
     app: tauri::AppHandle,
     target: String,
-    _card_id: String,
+    card_id: String,
 ) -> Result<String, String> {
     let target_path = Path::new(&target);
 
@@ -89,7 +104,10 @@ async fn git_pull(
 
     let pull_str = String::from_utf8_lossy(&git_pull_output.stdout).to_string();
     let pull_err = String::from_utf8_lossy(&git_pull_output.stderr).to_string();
-    let _ = app.emit("git-output", format!("git pull:\n{}{}", pull_str, pull_err));
+    let _ = app.emit("git-output", GitOutput {
+        card_id: card_id.clone(),
+        output: format!("git pull:\n{}{}", pull_str, pull_err),
+    });
 
     if !git_pull_output.status.success() {
         return Err(format!("git pull 失败: {}", pull_err));
@@ -112,6 +130,12 @@ async fn copy_and_prepare(
     let source_path = Path::new(&source);
     let target_path = Path::new(&target);
 
+    let _ = app.emit("file-operation-log", FileOperationLog {
+        card_id: card_id.clone(),
+        operation: "info".to_string(),
+        message: format!("📋 开始文件部署任务\n源目录: {}\n目标目录: {}", source, target),
+    });
+
     if !source_path.exists() {
         return Err("源目录不存在".to_string());
     }
@@ -121,6 +145,12 @@ async fn copy_and_prepare(
     }
 
     if auto_pull {
+        let _ = app.emit("file-operation-log", FileOperationLog {
+            card_id: card_id.clone(),
+            operation: "info".to_string(),
+            message: "🔄 开始执行 git pull...".to_string(),
+        });
+
         let git_pull_output = Command::new("git")
             .creation_flags(CREATE_NO_WINDOW)
             .args(["-C", &target, "pull"])
@@ -129,27 +159,78 @@ async fn copy_and_prepare(
 
         let pull_str = String::from_utf8_lossy(&git_pull_output.stdout).to_string();
         let pull_err = String::from_utf8_lossy(&git_pull_output.stderr).to_string();
-        let _ = app.emit("git-output", format!("git pull:\n{}{}", pull_str, pull_err));
+        let _ = app.emit("git-output", GitOutput {
+            card_id: card_id.clone(),
+            output: format!("git pull:\n{}{}", pull_str, pull_err),
+        });
 
         if !git_pull_output.status.success() {
             return Err(format!("git pull 失败: {}", pull_err));
         }
     }
 
-    if clear_target_mode == "all" {
-        remove_dir_all_recursive(target_path)?;
-    } else if clear_target_mode == "specific" {
-        for folder in &clear_target_folders {
-            let folder_path = target_path.join(folder);
-            if folder_path.exists() && folder_path.is_dir() {
-                remove_dir_all_recursive(&folder_path)?;
-                fs::remove_dir(&folder_path).map_err(|e| e.to_string())?;
+    let clear_mode_desc: String = match clear_target_mode.as_str() {
+        "all" => {
+            let _ = app.emit("file-operation-log", FileOperationLog {
+                card_id: card_id.clone(),
+                operation: "clear".to_string(),
+                message: "🗑️ 清空模式: 清空整个目标目录".to_string(),
+            });
+            remove_dir_all_recursive(target_path)?;
+            String::from("清空整个目录")
+        }
+        "specific" => {
+            if clear_target_folders.is_empty() {
+                let _ = app.emit("file-operation-log", FileOperationLog {
+                    card_id: card_id.clone(),
+                    operation: "clear".to_string(),
+                    message: "🗑️ 清空模式: 不清空".to_string(),
+                });
+                String::from("不清空")
+            } else {
+                let folders_str = clear_target_folders.join(", ");
+                let _ = app.emit("file-operation-log", FileOperationLog {
+                    card_id: card_id.clone(),
+                    operation: "clear".to_string(),
+                    message: format!("🗑️ 清空模式: 清空指定文件夹 [{}]", folders_str),
+                });
+                for folder in &clear_target_folders {
+                    let folder_path = target_path.join(folder);
+                    if folder_path.exists() && folder_path.is_dir() {
+                        remove_dir_all_recursive(&folder_path)?;
+                        fs::remove_dir(&folder_path).map_err(|e| e.to_string())?;
+                    }
+                }
+                format!("清空指定文件夹 [{}]", folders_str)
             }
         }
-    }
+        _ => {
+            let _ = app.emit("file-operation-log", FileOperationLog {
+                card_id: card_id.clone(),
+                operation: "clear".to_string(),
+                message: "🗑️ 清空模式: 不清空".to_string(),
+            });
+            String::from("不清空")
+        }
+    };
 
     let is_cut = move_mode == "cut";
+    let operation_desc = if is_cut { String::from("移动") } else { String::from("复制") };
+
+    let _ = app.emit("file-operation-log", FileOperationLog {
+        card_id: card_id.clone(),
+        operation: "info".to_string(),
+        message: format!("📦 操作模式: {}\n🎯 清空方式: {}\n📂 开始处理文件...", operation_desc, clear_mode_desc),
+    });
+
     copy_dir_recursive(source_path, target_path, is_cut)?;
+
+    let _ = app.emit("file-operation-log", FileOperationLog {
+        card_id: card_id.clone(),
+        operation: "complete".to_string(),
+        message: format!("✅ {} 操作完成!\n📁 源目录: {}\n📁 目标目录: {}\n🎯 清空方式: {}\n🔄 操作模式: {}", 
+            operation_desc, source, target, clear_mode_desc, operation_desc),
+    });
 
     let _ = app.emit("copy-progress", CopyProgress {
         current: 1,
@@ -166,7 +247,7 @@ async fn git_commit_push(
     app: tauri::AppHandle,
     target: String,
     message: String,
-    _card_id: String,
+    card_id: String,
 ) -> Result<(), String> {
     let target_path = Path::new(&target);
 
@@ -182,7 +263,10 @@ async fn git_commit_push(
 
     let add_str = String::from_utf8_lossy(&git_add_output.stdout).to_string();
     let add_err = String::from_utf8_lossy(&git_add_output.stderr).to_string();
-    let _ = app.emit("git-output", format!("git add:\n{}{}", add_str, add_err));
+    let _ = app.emit("git-output", GitOutput {
+        card_id: card_id.clone(),
+        output: format!("git add:\n{}{}", add_str, add_err),
+    });
 
     if !git_add_output.status.success() {
         return Err(format!("git add 失败: {}", add_err));
@@ -196,7 +280,10 @@ async fn git_commit_push(
 
     let commit_str = String::from_utf8_lossy(&git_commit_output.stdout).to_string();
     let commit_err = String::from_utf8_lossy(&git_commit_output.stderr).to_string();
-    let _ = app.emit("git-output", format!("git commit:\n{}{}", commit_str, commit_err));
+    let _ = app.emit("git-output", GitOutput {
+        card_id: card_id.clone(),
+        output: format!("git commit:\n{}{}", commit_str, commit_err),
+    });
 
     if !git_commit_output.status.success() {
         if commit_err.contains("nothing to commit") {
@@ -213,7 +300,10 @@ async fn git_commit_push(
 
     let push_str = String::from_utf8_lossy(&git_push_output.stdout).to_string();
     let push_err = String::from_utf8_lossy(&git_push_output.stderr).to_string();
-    let _ = app.emit("git-output", format!("git push:\n{}{}", push_str, push_err));
+    let _ = app.emit("git-output", GitOutput {
+        card_id: card_id.clone(),
+        output: format!("git push:\n{}{}", push_str, push_err),
+    });
 
     if !git_push_output.status.success() {
         return Err(format!("git push 失败: {}", push_err));
