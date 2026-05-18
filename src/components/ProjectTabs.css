@@ -1,6 +1,6 @@
 .tabs-container {
   margin-bottom: 8px;
-  border-bottom: 2px solid #e5e7eb;
+  border-bottom: 2px solid var(--color-border-light);
   padding-bottom: 0;
 }
 
@@ -20,12 +20,12 @@
   justify-content: center;
   gap: 6px;
   padding: 10px 6px;
-  background: #f3f4f6;
+  background: var(--color-bg-hover);
   border: none;
   border-radius: 10px 10px 0 0;
   font-size: 13px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--color-text-tertiary);
   cursor: pointer;
   transition: all 0.2s;
   position: relative;
@@ -34,15 +34,15 @@
 }
 
 .tab-item:hover:not(.active):not(.add-tab) {
-  background: #e5e7eb;
-  color: #374151;
+  background: var(--color-bg-active);
+  color: var(--color-text-secondary);
 }
 
 .tab-item.active {
-  background: white;
-  color: #1a1a1a;
-  border-color: #e5e7eb;
-  border-bottom-color: white;
+  background: var(--color-bg-white);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-light);
+  border-bottom-color: var(--color-bg-white);
 }
 
 .tab-item.active::after {
@@ -57,16 +57,16 @@
 
 .tab-item.add-tab {
   background: transparent;
-  border: 2px dashed #d1d5db;
-  color: #9ca3af;
+  border: 2px dashed var(--color-border-default);
+  color: var(--color-text-muted);
   margin-left: 8px;
 }
 
 .tab-item.add-tab:hover {
   border-style: dashed;
-  border-color: #3b82f6;
-  color: #3b82f6;
-  background: #eff6ff;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
 }
 
 .add-tab .add-icon {
@@ -85,30 +85,30 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #d1d5db;
+  background: var(--color-border-default);
   flex-shrink: 0;
 }
 
 .tab-status-dot.idle {
-  background: #6b7280;
+  background: var(--status-idle);
 }
 
 .tab-status-dot.copying,
 .tab-status-dot.committing {
-  background: #f59e0b;
+  background: var(--status-active);
   animation: pulse 1.5s infinite;
 }
 
 .tab-status-dot.ready {
-  background: #10b981;
+  background: var(--status-ready);
 }
 
 .tab-status-dot.done {
-  background: #3b82f6;
+  background: var(--status-done);
 }
 
 .tab-status-dot.error {
-  background: #ef4444;
+  background: var(--status-error);
 }
 
 @keyframes pulse {

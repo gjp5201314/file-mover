@@ -20,8 +20,9 @@
  * - 根据状态显示不同的模态框
  */
 
-import { Header, ProjectTabs, ProjectCard, ProjectSidebar, DeleteConfirmModal, CommitModal, SettingsDrawer } from "./components";
+import { Header, ProjectTabs, ProjectCard, ProjectSidebar, ConfirmModal, CommitModal, SettingsDrawer } from "./components";
 import { ProjectProvider, useProject } from "./context/ProjectContext";
+import "./components/variables.css";
 import "./components/styles.css";
 import { useState } from "react";
 
@@ -97,8 +98,8 @@ function AppContent() {
           <ProjectSidebar
             fileOutput={projectLogs[activeCard.id]?.fileOutput || ""}
             gitOutput={projectLogs[activeCard.id]?.gitOutput || ""}
-            onClearFileOutput={() => clearProjectLogs(activeCard.id)}
-            onClearGitOutput={() => clearProjectLogs(activeCard.id)}
+            onClearFileOutput={() => clearProjectLogs(activeCard.id, 'file')}
+            onClearGitOutput={() => clearProjectLogs(activeCard.id, 'git')}
           />
         </div>
       )}
@@ -112,11 +113,22 @@ function AppContent() {
 
       {/* 删除确认对话框 */}
       {pendingDelete && (
-        <DeleteConfirmModal
-          project={pendingDelete}
+        <ConfirmModal
+          isOpen={true}
+          title="确认删除项目"
+          confirmText="确认删除"
+          cancelText="取消"
+          confirmType="danger"
           onConfirm={confirmDeleteCard}
           onCancel={() => setPendingDelete(null)}
-        />
+        >
+          <p>将从列表中删除"{pendingDelete.name}"。</p>
+          <p>此操作只删除应用里的项目配置，不会删除源目录或目标目录中的文件。</p>
+          <div className="modal-info">
+            <div><small>源目录: {pendingDelete.sourcePath || "未选择"}</small></div>
+            <div><small>目标目录: {pendingDelete.targetPath || "未选择"}</small></div>
+          </div>
+        </ConfirmModal>
       )}
 
       {/* 手动提交对话框 */}

@@ -2,6 +2,28 @@ import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import "./SettingsDrawer.css";
 
+interface ChangelogEntry {
+  version: string;
+  date: string;
+  type: "新增" | "优化" | "修复" | "重构";
+  content: string;
+}
+
+const changelog: ChangelogEntry[] = [
+  { version: "1.2.0", date: "2026-05-18", type: "新增", content: "系统托盘功能：支持最小化到托盘后台运行，可通过托盘图标恢复窗口" },
+  { version: "1.2.0", date: "2026-05-18", type: "重构", content: "通用确认弹窗组件：创建万能弹窗组件，替代原有的删除确认弹窗，支持多种场景复用" },
+  { version: "1.2.0", date: "2026-05-18", type: "优化", content: "日志清除功能：区分文件和Git日志，各自独立清除，互不影响" },
+  { version: "1.1.0", date: "2026-05-18", type: "新增", content: "自动化监听功能：开启后监听打包目录文件变化，自动执行部署" },
+  { version: "1.0.3", date: "2026-05-15", type: "修复", content: "全链路安全加固：路径验证、符号链接检测、Git 操作审计" },
+  { version: "1.0.2", date: "2026-05-15", type: "新增", content: "开机自启：支持 Windows 注册表开机启动" },
+  { version: "1.0.1", date: "2026-05-14", type: "新增", content: "Git 代理设置：支持配置 HTTP/HTTPS 代理" },
+  { version: "1.0.0", date: "2026-05-12", type: "新增", content: "项目配置管理：支持多项目配置、导入导出" },
+  { version: "1.0.0", date: "2026-05-12", type: "新增", content: "文件部署：支持复制/移动文件到目标目录" },
+  { version: "1.0.0", date: "2026-05-12", type: "新增", content: "Git 集成：支持自动/手动提交、自动推送" },
+  { version: "1.0.0", date: "2026-05-12", type: "新增", content: "目标目录清空：支持不清空/全部清空/指定文件清空" },
+  { version: "1.0.0", date: "2026-05-12", type: "新增", content: "初始化项目" },
+];
+
 interface SettingsDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -12,12 +34,15 @@ interface SettingsDrawerProps {
 
 export default function SettingsDrawer({ isOpen, onClose, onImport, onExport, hasProjects }: SettingsDrawerProps) {
   const [autoStartEnabled, setAutoStartEnabled] = useState(false);
+  const [trayEnabled, setTrayEnabled] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [showChangelog, setShowChangelog] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       loadAutoStartStatus();
+      loadTrayStatus();
     }
   }, [isOpen]);
 
@@ -41,6 +66,15 @@ export default function SettingsDrawer({ isOpen, onClose, onImport, onExport, ha
     }
   };
 
+  const loadTrayStatus = async () => {
+    try {
+      const enabled = await invoke<boolean>("get_tray_setting");
+      setTrayEnabled(enabled);
+    } catch (err) {
+      console.error("获取托盘状态失败:", err);
+    }
+  };
+
   const handleToggle = async (checked: boolean) => {
     setLoading(true);
     setMessage("");
@@ -49,6 +83,23 @@ export default function SettingsDrawer({ isOpen, onClose, onImport, onExport, ha
       await invoke("set_autostart", { enabled: checked });
       setAutoStartEnabled(checked);
       setMessage(checked ? "已开启开机启动" : "已关闭开机启动");
+      setTimeout(() => setMessage(""), 3000);
+    } catch (err) {
+      setMessage(`设置失败: ${err}`);
+      setTimeout(() => setMessage(""), 5000);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTrayToggle = async (checked: boolean) => {
+    setLoading(true);
+    setMessage("");
+
+    try {
+      await invoke("set_tray_setting", { enabled: checked });
+      setTrayEnabled(checked);
+      setMessage(checked ? "已开启最小化到托盘" : "已关闭最小化到托盘");
       setTimeout(() => setMessage(""), 3000);
     } catch (err) {
       setMessage(`设置失败: ${err}`);
@@ -98,12 +149,31 @@ export default function SettingsDrawer({ isOpen, onClose, onImport, onExport, ha
                   <span className="slider"></span>
                 </label>
               </div>
-              {message && (
-                <div className={`auto-start-message ${message.includes("失败") ? "error" : "success"}`}>
-                  {message}
-                </div>
-              )}
             </div>
+
+            <div className="settings-item">
+              <div className="switch-row">
+                <div className="switch-info">
+                  <span className="switch-label">最小化到托盘</span>
+                  <span className="switch-desc">开启后，关闭窗口时应用将最小化到系统托盘</span>
+                </div>
+                <label className="switch">
+                  <input
+                    type="checkbox"
+                    checked={trayEnabled}
+                    onChange={(e) => handleTrayToggle(e.target.checked)}
+                    disabled={loading}
+                  />
+                  <span className="slider"></span>
+                </label>
+              </div>
+            </div>
+
+            {message && (
+              <div className={`auto-start-message ${message.includes("失败") ? "error" : "success"}`}>
+                {message}
+              </div>
+            )}
           </div>
 
           <div className="settings-section">
@@ -127,8 +197,50 @@ export default function SettingsDrawer({ isOpen, onClose, onImport, onExport, ha
               </button>
             </div>
           </div>
+
+          <div className="settings-section">
+            <h3 className="section-title">关于</h3>
+            <button className="settings-action-btn" onClick={() => setShowChangelog(true)}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+              开发日志
+            </button>
+          </div>
         </div>
       </div>
+
+      {showChangelog && (
+        <div className="changelog-overlay" onClick={() => setShowChangelog(false)}>
+          <div className="changelog-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="changelog-header">
+              <h2>开发日志</h2>
+              <button className="close-btn" onClick={() => setShowChangelog(false)}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <div className="changelog-content">
+              {changelog.map((entry, index) => (
+                <div key={index} className="changelog-entry">
+                  <div className="entry-header">
+                    <span className={`entry-badge ${entry.type}`}>{entry.type}</span>
+                    <span className="entry-version">v{entry.version}</span>
+                    <span className="entry-date">{entry.date}</span>
+                  </div>
+                  <div className="entry-content">{entry.content}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,8 +1,8 @@
 :root {
   font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
   font-size: 13px;
-  color: #1a1a1a;
-  background-color: #f0f2f5;
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-page);
 }
 
 * {
@@ -17,22 +17,22 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: var(--color-scrollbar-track);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: var(--color-scrollbar-thumb);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a1a1a1;
+  background: var(--color-scrollbar-thumb-hover);
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #c1c1c1 #f1f1f1;
+  scrollbar-color: var(--color-scrollbar-thumb) var(--color-scrollbar-track);
 }
 
 body {
@@ -54,7 +54,7 @@ body {
 }
 
 .app-title {
-  color: #1a1a1a;
+  color: var(--color-text-primary);
   font-size: 20px;
   font-weight: 700;
   margin: 0;
@@ -78,17 +78,17 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #9ca3af;
+  color: var(--color-text-muted);
   font-size: 14px;
   padding: 40px 16px;
-  background: white;
+  background: var(--color-bg-white);
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px var(--shadow-sm);
 }
 
 .add-card-btn {
-  background: white;
-  border: 2px dashed #d1d5db;
+  background: var(--color-bg-white);
+  border: 2px dashed var(--color-border-default);
   border-radius: 10px;
   padding: 30px;
   display: flex;
@@ -98,14 +98,14 @@ body {
   gap: 10px;
   cursor: pointer;
   transition: all 0.2s;
-  color: #9ca3af;
+  color: var(--color-text-muted);
   min-height: 220px;
 }
 
 .add-card-btn:hover {
-  border-color: #3b82f6;
-  color: #3b82f6;
-  background: #eff6ff;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
 }
 
 .add-icon {
@@ -115,7 +115,7 @@ body {
 
 .git-output-panel {
   margin-top: 16px;
-  background: #1f2937;
+  background: var(--color-log-bg);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -125,28 +125,28 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 10px 14px;
-  background: #374151;
-  color: #f9fafb;
+  background: var(--color-log-header);
+  color: var(--color-log-text);
   font-size: 12px;
 }
 
 .git-output-header button {
   padding: 3px 10px;
-  background: #4b5563;
+  background: var(--color-log-btn);
   border: none;
   border-radius: 4px;
-  color: #d1d5db;
+  color: var(--color-border-default);
   cursor: pointer;
   font-size: 11px;
 }
 
 .git-output-header button:hover {
-  background: #6b7280;
+  background: var(--color-log-btn-hover);
 }
 
 .git-output-content {
   padding: 12px;
-  color: #10b981;
+  color: var(--color-log-output);
   font-family: "Consolas", monospace;
   font-size: 11px;
   line-height: 1.5;
@@ -158,8 +158,8 @@ body {
 
 .header-btn {
   padding: 6px 12px;
-  border: 1px solid #d1d5db;
-  background: white;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-white);
   border-radius: 6px;
   font-size: 13px;
   cursor: pointer;
@@ -167,9 +167,9 @@ body {
 }
 
 .header-btn:hover:not(:disabled) {
-  background: #3b82f6;
+  background: var(--color-primary);
   color: white;
-  border-color: #3b82f6;
+  border-color: var(--color-primary);
 }
 
 .header-btn:disabled {

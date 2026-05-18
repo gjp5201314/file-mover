@@ -17,30 +17,30 @@
 .settings-btn {
   width: 36px;
   height: 36px;
-  border: 1px solid #d1d5db;
-  background: white;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-white);
   border-radius: 6px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
-  color: #6b7280;
+  color: var(--color-text-tertiary);
 }
 
 .settings-btn:hover {
-  background: #3b82f6;
+  background: var(--color-primary);
   color: white;
-  border-color: #3b82f6;
+  border-color: var(--color-primary);
 }
 
 .dropdown-menu {
   position: absolute;
   top: calc(100% + 4px);
   right: 0;
-  background: white;
+  background: var(--color-bg-white);
   border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 16px var(--shadow-lg);
   min-width: 140px;
   overflow: hidden;
   z-index: 100;
@@ -65,21 +65,21 @@
   background: transparent;
   text-align: left;
   font-size: 13px;
-  color: #374151;
+  color: var(--color-text-secondary);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .dropdown-item:hover:not(:disabled) {
-  background: #f3f4f6;
-  color: #3b82f6;
+  background: var(--color-bg-hover);
+  color: var(--color-primary);
 }
 
 .dropdown-item:disabled {
-  color: #9ca3af;
+  color: var(--color-text-muted);
   cursor: not-allowed;
 }
 
 .dropdown-item + .dropdown-item {
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-border-light);
 }

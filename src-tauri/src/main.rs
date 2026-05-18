@@ -10,8 +10,11 @@ use std::process::Command;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
-use tauri::Emitter;
-use tauri::Manager;
+use tauri::{
+    menu::{Menu, MenuItem},
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    AppHandle, Emitter, Manager,
+};
 
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
@@ -671,8 +674,8 @@ fn write_text_file(path: String, contents: String) -> Result<(), String> {
 
 #[tauri::command]
 fn set_git_proxy(port: u16) -> Result<(), String> {
-    if port < 1 || port > 65535 {
-        return Err("端口号无效（范围：1-65535）".to_string());
+    if port == 0 {
+        return Err("端口号无效（端口不能为 0）".to_string());
     }
     
     let proxy_url = format!("http://127.0.0.1:{}", port);
@@ -730,6 +733,46 @@ fn clear_git_proxy() -> Result<(), String> {
 const AUTOSTART_REG_KEY: &str = r"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run";
 const AUTOSTART_APP_NAME: &str = "FileMover";
 
+const TRAY_ENABLED_KEY: &str = r"HKEY_CURRENT_USER\Software\FileMover";
+
+fn get_tray_enabled_from_registry() -> Result<bool, String> {
+    let output = Command::new("reg")
+        .creation_flags(CREATE_NO_WINDOW)
+        .args(["query", TRAY_ENABLED_KEY, "/v", "TrayEnabled"])
+        .output()
+        .map_err(|e| format!("查询托盘状态失败: {}", e))?;
+
+    if output.status.success() {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        if stdout.contains("0x0") {
+            Ok(false)
+        } else {
+            Ok(true)
+        }
+    } else {
+        Ok(false)
+    }
+}
+
+fn set_tray_enabled_to_registry(enabled: bool) -> Result<(), String> {
+    let value = if enabled { "1" } else { "0" };
+
+    Command::new("reg")
+        .creation_flags(CREATE_NO_WINDOW)
+        .args([
+            "add",
+            TRAY_ENABLED_KEY,
+            "/v", "TrayEnabled",
+            "/t", "REG_SZ",
+            "/d", value,
+            "/f"
+        ])
+        .output()
+        .map_err(|e| format!("保存托盘状态失败: {}", e))?;
+
+    Ok(())
+}
+
 #[tauri::command]
 fn get_autostart() -> Result<bool, String> {
     let output = Command::new("reg")
@@ -774,6 +817,33 @@ fn set_autostart(enabled: bool) -> Result<(), String> {
             .map_err(|e| format!("移除开机启动失败: {}", e))?;
     }
     
+    Ok(())
+}
+
+#[tauri::command]
+fn get_tray_setting(_app: AppHandle) -> Result<bool, String> {
+    get_tray_enabled_from_registry()
+}
+
+#[tauri::command]
+fn set_tray_setting(_app: AppHandle, enabled: bool) -> Result<(), String> {
+    set_tray_enabled_to_registry(enabled)
+}
+
+#[tauri::command]
+fn show_window(app: AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        window.show().map_err(|e| format!("显示窗口失败: {}", e))?;
+        window.set_focus().map_err(|e| format!("聚焦窗口失败: {}", e))?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn hide_window(app: AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        window.hide().map_err(|e| format!("隐藏窗口失败: {}", e))?;
+    }
     Ok(())
 }
 
@@ -899,11 +969,73 @@ fn main() {
             clear_git_proxy,
             get_autostart,
             set_autostart,
+            get_tray_setting,
+            set_tray_setting,
+            show_window,
+            hide_window,
             start_watch,
             stop_watch,
             stop_all_watches,
             get_watch_statuses
         ])
+        .setup(|app| {
+            let show_item = MenuItem::with_id(app, "show", "显示窗口", true, None::<&str>)?;
+            let quit_item = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&show_item, &quit_item])?;
+
+            let _tray = TrayIconBuilder::new()
+                .icon(app.default_window_icon().unwrap().clone())
+                .menu(&menu)
+                .show_menu_on_left_click(false)
+                .tooltip("前端部署工具")
+                .on_menu_event(move |app, event| {
+                    match event.id.as_ref() {
+                        "show" => {
+                            if let Some(window) = app.get_webview_window("main") {
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                            }
+                        }
+                        "quit" => {
+                            app.exit(0);
+                        }
+                        _ => {}
+                    }
+                })
+                .on_tray_icon_event(move |tray, event| {
+                    if let TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
+                        let app = tray.app_handle();
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                })
+                .build(app)?;
+
+            let app_handle_for_close = app.handle().clone();
+            if let Some(window) = app.get_webview_window("main") {
+                let app_handle_for_close_clone = app_handle_for_close.clone();
+                window.on_window_event(move |event| {
+                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                        let tray_enabled = get_tray_enabled_from_registry().unwrap_or(false);
+                        if tray_enabled {
+                            api.prevent_close();
+                            if let Some(window) = app_handle_for_close_clone.get_webview_window("main") {
+                                let _ = window.hide();
+                            }
+                        }
+                    }
+                });
+            }
+
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("启动应用失败");
 }

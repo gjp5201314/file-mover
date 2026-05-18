@@ -5,22 +5,22 @@
 .git-proxy-toggle-btn {
   width: 36px;
   height: 36px;
-  border: 1px solid #d1d5db;
-  background: white;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-white);
   border-radius: 6px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
-  color: #6b7280;
+  color: var(--color-text-tertiary);
   position: relative;
 }
 
 .git-proxy-toggle-btn:hover {
-  background: #3b82f6;
+  background: var(--color-primary);
   color: white;
-  border-color: #3b82f6;
+  border-color: var(--color-primary);
 }
 
 .proxy-indicator {
@@ -29,7 +29,7 @@
   right: -2px;
   width: 8px;
   height: 8px;
-  background: #10b981;
+  background: var(--color-success);
   border-radius: 50%;
   border: 2px solid white;
 }
@@ -38,9 +38,9 @@
   position: absolute;
   top: calc(100% + 4px);
   right: 0;
-  background: white;
+  background: var(--color-bg-white);
   border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 16px var(--shadow-lg);
   min-width: 280px;
   padding: 16px;
   z-index: 100;
@@ -64,21 +64,21 @@
   align-items: center;
   margin-bottom: 12px;
   padding-bottom: 10px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .git-proxy-header span {
   font-weight: 600;
   font-size: 14px;
-  color: #1a1a1a;
+  color: var(--color-text-primary);
 }
 
 .git-proxy-header .close-btn {
   width: 24px;
   height: 24px;
   border: none;
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--color-bg-hover);
+  color: var(--color-text-tertiary);
   border-radius: 4px;
   cursor: pointer;
   display: flex;
@@ -89,8 +89,8 @@
 }
 
 .git-proxy-header .close-btn:hover {
-  background: #fee2e2;
-  color: #dc2626;
+  background: var(--color-error-light);
+  color: var(--color-error);
 }
 
 .current-proxy {
@@ -98,18 +98,18 @@
   padding: 10px;
   background: #f0fdf4;
   border-radius: 6px;
-  border: 1px solid #d1fae5;
+  border: 1px solid var(--color-success-border);
 }
 
 .current-proxy-label {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--color-text-tertiary);
   margin-bottom: 4px;
 }
 
 .current-proxy-value {
   font-size: 13px;
-  color: #059669;
+  color: var(--color-success-hover);
   font-weight: 600;
   font-family: "Consolas", monospace;
 }
@@ -122,7 +122,7 @@
   display: block;
   font-size: 12px;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-text-secondary);
   margin-bottom: 6px;
 }
 
@@ -134,7 +134,7 @@
 .proxy-input-group input {
   flex: 1;
   padding: 8px 12px;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--color-border-light);
   border-radius: 6px;
   font-size: 13px;
   transition: border-color 0.2s;
@@ -142,18 +142,18 @@
 
 .proxy-input-group input:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--color-primary);
 }
 
 .proxy-input-group input:disabled {
-  background: #f3f4f6;
+  background: var(--color-bg-hover);
   cursor: not-allowed;
 }
 
 .set-proxy-btn {
   width: 60px;
   padding: 8px 16px;
-  background: #3b82f6;
+  background: var(--color-primary);
   color: white;
   border: none;
   border-radius: 6px;
@@ -164,7 +164,7 @@
 }
 
 .set-proxy-btn:hover:not(:disabled) {
-  background: #2563eb;
+  background: var(--color-primary-hover);
   transform: translateY(-1px);
 }
 
@@ -176,9 +176,9 @@
 .clear-proxy-btn {
   width: 100%;
   padding: 8px 12px;
-  background: #fee2e2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
+  background: var(--color-error-light);
+  color: var(--color-error);
+  border: 1px solid var(--color-error-border);
   border-radius: 6px;
   font-size: 13px;
   font-weight: 600;
@@ -187,7 +187,7 @@
 }
 
 .clear-proxy-btn:hover:not(:disabled) {
-  background: #fecaca;
+  background: var(--color-error-border);
   transform: translateY(-1px);
 }
 
@@ -205,13 +205,13 @@
 }
 
 .proxy-message.success {
-  background: #d1fae5;
-  color: #059669;
-  border: 1px solid #a7f3d0;
+  background: var(--color-success-light);
+  color: var(--color-success-hover);
+  border: 1px solid var(--color-success-border);
 }
 
 .proxy-message.error {
-  background: #fee2e2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
+  background: var(--color-error-light);
+  color: var(--color-error);
+  border: 1px solid var(--color-error-border);
 }

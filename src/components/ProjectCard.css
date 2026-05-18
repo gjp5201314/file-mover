@@ -1,7 +1,7 @@
 .project-card {
-  background: white;
+  background: var(--color-bg-white);
   border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px var(--shadow-sm);
   padding: 8px;
   display: flex;
   flex-direction: column;
@@ -11,26 +11,26 @@
 }
 
 .project-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 12px var(--shadow-md);
 }
 
 .project-card.ready {
-  border-color: #10b981;
+  border-color: var(--status-ready);
 }
 
 .project-card.done {
-  border-color: #3b82f6;
+  border-color: var(--status-done);
   background: #f0fdf4;
 }
 
 .project-card.error {
-  border-color: #ef4444;
+  border-color: var(--status-error);
   background: #fef2f2;
 }
 
 .project-card.copying,
 .project-card.committing {
-  border-color: #f59e0b;
+  border-color: var(--status-active);
 }
 
 .card-header {
@@ -47,24 +47,24 @@
   background: transparent;
   padding: 4px 6px;
   border-radius: 6px;
-  color: #1a1a1a;
+  color: var(--color-text-primary);
 }
 
 .card-name-input:hover {
-  background: #f3f4f6;
+  background: var(--color-bg-hover);
 }
 
 .card-name-input:focus {
   outline: none;
-  background: #eff6ff;
+  background: var(--color-primary-light);
 }
 
 .card-delete-btn {
   width: 28px;
   height: 28px;
   border: none;
-  background: #fee2e2;
-  color: #dc2626;
+  background: var(--color-error-light);
+  color: var(--color-error);
   border-radius: 6px;
   font-size: 18px;
   cursor: pointer;
@@ -75,7 +75,7 @@
 }
 
 .card-delete-btn:hover {
-  background: #fecaca;
+  background: var(--color-error-border);
 }
 
 .card-delete-btn:disabled {
@@ -90,7 +90,7 @@
 }
 
 .path-section {
-  background: #f9fafb;
+  background: var(--color-bg-section);
   border-radius: 6px;
   padding: 6px;
   display: flex;
@@ -101,19 +101,19 @@
 .section-header {
   font-weight: 600;
   font-size: 12px;
-  color: #374151;
+  color: var(--color-text-secondary);
   margin-bottom: 2px;
 }
 
 .section-hint {
   font-size: 10px;
-  color: #9ca3af;
+  color: var(--color-text-muted);
 }
 
 .section-options {
   margin-top: 6px;
   padding-top: 6px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-border-light);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -132,7 +132,7 @@
 
 .path-row label {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-text-tertiary);
 }
 
 .checkbox-label {
@@ -141,7 +141,7 @@
   gap: 6px;
   cursor: pointer;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-text-tertiary);
   user-select: none;
 }
 
@@ -149,11 +149,11 @@
   width: 14px;
   height: 14px;
   cursor: pointer;
-  accent-color: #3b82f6;
+  accent-color: var(--color-primary);
 }
 
 .checkbox-label:hover {
-  color: #3b82f6;
+  color: var(--color-primary);
 }
 
 .radio-group {
@@ -167,7 +167,7 @@
   gap: 4px;
   cursor: pointer;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-text-tertiary);
   user-select: none;
 }
 
@@ -175,11 +175,11 @@
   width: 14px;
   height: 14px;
   cursor: pointer;
-  accent-color: #3b82f6;
+  accent-color: var(--color-primary);
 }
 
 .radio-label:hover {
-  color: #3b82f6;
+  color: var(--color-primary);
 }
 
 .radio-group-inline {
@@ -201,7 +201,7 @@
 .folder-selection {
   margin-top: 6px;
   padding: 10px;
-  background: #f3f4f6;
+  background: var(--color-bg-hover);
   border-radius: 6px;
   display: flex;
   flex-direction: column;
@@ -213,14 +213,14 @@
   justify-content: space-between;
   align-items: center;
   font-size: 12px;
-  color: #374151;
+  color: var(--color-text-secondary);
   font-weight: 500;
 }
 
 .refresh-folders-btn {
   padding: 3px 8px;
-  background: #e5e7eb;
-  border: 1px solid #d1d5db;
+  background: var(--color-bg-active);
+  border: 1px solid var(--color-border-default);
   border-radius: 4px;
   font-size: 10px;
   cursor: pointer;
@@ -228,9 +228,9 @@
 }
 
 .refresh-folders-btn:hover {
-  background: #3b82f6;
+  background: var(--color-primary);
   color: white;
-  border-color: #3b82f6;
+  border-color: var(--color-primary);
 }
 
 .folder-list {
@@ -243,7 +243,7 @@
 
 .folder-list-empty {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--color-text-muted);
   text-align: center;
   padding: 10px;
 }
@@ -254,37 +254,37 @@
   gap: 6px;
   cursor: pointer;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-text-tertiary);
   padding: 3px 6px;
   border-radius: 4px;
   transition: background 0.2s;
 }
 
 .folder-checkbox-label:hover {
-  background: #e5e7eb;
-  color: #374151;
+  background: var(--color-bg-active);
+  color: var(--color-text-secondary);
 }
 
 .folder-checkbox-label input[type="checkbox"] {
   width: 13px;
   height: 13px;
   cursor: pointer;
-  accent-color: #3b82f6;
+  accent-color: var(--color-primary);
 }
 
 .folder-checkbox-label.unselected {
-  color: #9ca3af;
+  color: var(--color-text-muted);
 }
 
 .folder-checkbox-label.unselected:hover {
-  background: #e5e7eb;
-  color: #6b7280;
+  background: var(--color-bg-active);
+  color: var(--color-text-tertiary);
 }
 
 .path-btn {
   padding: 5px 12px;
-  border: 1px solid #d1d5db;
-  background: white;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-white);
   border-radius: 6px;
   font-size: 12px;
   cursor: pointer;
@@ -292,9 +292,9 @@
 }
 
 .path-btn:hover {
-  background: #3b82f6;
+  background: var(--color-primary);
   color: white;
-  border-color: #3b82f6;
+  border-color: var(--color-primary);
 }
 
 .path-btn.full-width {
@@ -303,14 +303,14 @@
 
 .path-display {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--color-text-muted);
   padding: 6px 10px;
-  background: #f9fafb;
+  background: var(--color-bg-section);
   border-radius: 6px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border-light);
 }
 
 .card-status {
@@ -331,33 +331,33 @@
 }
 
 .status-badge.idle {
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--color-bg-hover);
+  color: var(--status-idle);
 }
 
 .status-badge.copying {
-  background: #fef3c7;
-  color: #d97706;
+  background: var(--color-warning-light);
+  color: var(--color-warning-hover);
 }
 
 .status-badge.ready {
-  background: #d1fae5;
-  color: #059669;
+  background: var(--color-success-light);
+  color: var(--color-success-hover);
 }
 
 .status-badge.committing {
-  background: #dbeafe;
-  color: #2563eb;
+  background: var(--color-info-light);
+  color: var(--color-info-hover);
 }
 
 .status-badge.done {
-  background: #dbeafe;
-  color: #2563eb;
+  background: var(--color-info-light);
+  color: var(--color-info-hover);
 }
 
 .status-badge.error {
-  background: #fee2e2;
-  color: #dc2626;
+  background: var(--color-error-light);
+  color: var(--color-error);
 }
 
 .status-message {
@@ -367,14 +367,14 @@
 
 .progress-bar-container {
   height: 5px;
-  background: #e5e7eb;
+  background: var(--color-bg-active);
   border-radius: 3px;
   overflow: hidden;
 }
 
 .progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, #3b82f6, #10b981);
+  background: linear-gradient(90deg, var(--color-primary), var(--color-success));
   border-radius: 3px;
   transition: width 0.3s ease;
 }
@@ -402,7 +402,7 @@
 }
 
 .execute-btn {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
   color: white;
 }
 
@@ -412,7 +412,7 @@
 }
 
 .confirm-btn {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, var(--color-success), var(--color-success-hover));
   color: white;
 }
 
@@ -422,32 +422,32 @@
 }
 
 .reset-btn {
-  background: #f3f4f6;
-  color: #6b7280;
-  border: 1px solid #d1d5db;
+  background: var(--color-bg-hover);
+  color: var(--color-text-tertiary);
+  border: 1px solid var(--color-border-default);
 }
 
 .reset-btn:hover:not(:disabled) {
-  background: #e5e7eb;
+  background: var(--color-bg-active);
 }
 
 .cancel-btn {
-  background: #f3f4f6;
-  color: #6b7280;
-  border: 1px solid #d1d5db;
+  background: var(--color-bg-hover);
+  color: var(--color-text-tertiary);
+  border: 1px solid var(--color-border-default);
 }
 
 .cancel-btn:hover {
-  background: #e5e7eb;
+  background: var(--color-bg-active);
 }
 
 .danger-btn {
-  background: #dc2626;
+  background: var(--color-error);
   color: white;
 }
 
 .danger-btn:hover:not(:disabled) {
-  background: #b91c1c;
+  background: var(--color-error-hover);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
 }
@@ -459,21 +459,21 @@
   align-items: center;
   margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-border-light);
 }
 
 .auto-watch-switch-row .switch-label {
   font-size: 12px;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-text-secondary);
 }
 
 .auto-watch-status {
   font-size: 11px;
-  color: #059669;
+  color: var(--color-success-hover);
   margin-top: 4px;
   padding: 4px 8px;
-  background: #d1fae5;
+  background: var(--color-success-light);
   border-radius: 4px;
   text-align: center;
 }

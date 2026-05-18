@@ -8,7 +8,7 @@
  * - ProjectTabs: 项目标签页
  * - ProjectCard: 项目卡片
  * - ProjectSidebar: 侧边栏日志
- * - DeleteConfirmModal: 删除确认对话框
+ * - ConfirmModal: 通用确认对话框
  * - CommitModal: Git 提交对话框
  * - GitProxySettings: Git 代理设置
  *
@@ -23,7 +23,8 @@ export { default as ProjectTabs } from "./ProjectTabs";
 export type { ProjectTab } from "./ProjectTabs";
 export { default as ProjectCard } from "./ProjectCard";
 export { default as ProjectSidebar } from "./ProjectSidebar";
-export { default as DeleteConfirmModal } from "./DeleteConfirmModal";
+export { default as ConfirmModal } from "./ConfirmModal";
+export type { ConfirmModalProps, ConfirmButtonType } from "./ConfirmModal";
 export { default as CommitModal } from "./CommitModal";
 export { default as GitProxySettings } from "./GitProxySettings";
 export { default as AutoStartSettings } from "./AutoStartSettings";

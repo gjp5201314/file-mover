@@ -5,22 +5,22 @@
 .auto-start-toggle-btn {
   width: 36px;
   height: 36px;
-  border: 1px solid #d1d5db;
-  background: white;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-white);
   border-radius: 6px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
-  color: #6b7280;
+  color: var(--color-text-tertiary);
   position: relative;
 }
 
 .auto-start-toggle-btn:hover {
-  background: #3b82f6;
+  background: var(--color-primary);
   color: white;
-  border-color: #3b82f6;
+  border-color: var(--color-primary);
 }
 
 .auto-start-indicator {
@@ -29,7 +29,7 @@
   right: -2px;
   width: 8px;
   height: 8px;
-  background: #10b981;
+  background: var(--color-success);
   border-radius: 50%;
   border: 2px solid white;
 }
@@ -38,9 +38,9 @@
   position: absolute;
   top: calc(100% + 4px);
   right: 0;
-  background: white;
+  background: var(--color-bg-white);
   border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 16px var(--shadow-lg);
   min-width: 260px;
   padding: 16px;
   z-index: 100;
@@ -64,21 +64,21 @@
   align-items: center;
   margin-bottom: 12px;
   padding-bottom: 10px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .auto-start-header span {
   font-weight: 600;
   font-size: 14px;
-  color: #1a1a1a;
+  color: var(--color-text-primary);
 }
 
 .auto-start-header .close-btn {
   width: 24px;
   height: 24px;
   border: none;
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--color-bg-hover);
+  color: var(--color-text-tertiary);
   border-radius: 4px;
   cursor: pointer;
   display: flex;
@@ -89,8 +89,8 @@
 }
 
 .auto-start-header .close-btn:hover {
-  background: #fee2e2;
-  color: #dc2626;
+  background: var(--color-error-light);
+  color: var(--color-error);
 }
 
 .auto-start-content {
@@ -107,7 +107,7 @@
 .switch-label {
   font-size: 13px;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-text-secondary);
 }
 
 .switch {
@@ -130,7 +130,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #d1d5db;
+  background-color: var(--color-border-default);
   transition: 0.3s;
   border-radius: 24px;
 }
@@ -145,11 +145,11 @@
   background-color: white;
   transition: 0.3s;
   border-radius: 50%;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 1px 3px var(--shadow-sm);
 }
 
 input:checked + .slider {
-  background-color: #3b82f6;
+  background-color: var(--color-primary);
 }
 
 input:checked + .slider:before {
@@ -163,7 +163,7 @@ input:disabled + .slider {
 
 .auto-start-desc {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--color-text-tertiary);
   line-height: 1.4;
 }
 
@@ -176,13 +176,13 @@ input:disabled + .slider {
 }
 
 .auto-start-message.success {
-  background: #d1fae5;
-  color: #059669;
-  border: 1px solid #a7f3d0;
+  background: var(--color-success-light);
+  color: var(--color-success-hover);
+  border: 1px solid var(--color-success-border);
 }
 
 .auto-start-message.error {
-  background: #fee2e2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
+  background: var(--color-error-light);
+  color: var(--color-error);
+  border: 1px solid var(--color-error-border);
 }

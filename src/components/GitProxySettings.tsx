@@ -42,7 +42,7 @@ export default function GitProxySettings({ initialExpanded = false }: GitProxySe
   // 是否展开
   const [isExpanded, setIsExpanded] = useState(initialExpanded);
   // 端口输入
-  const [port, setPort] = useState("");
+  const [port, setPort] = useState("7897");
   // 当前代理
   const [currentProxy, setCurrentProxy] = useState<string | null>(null);
   // 加载状态

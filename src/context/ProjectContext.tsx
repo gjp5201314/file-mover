@@ -86,7 +86,7 @@ interface ProjectContextValue {
   /** 重置项目状态 */
   resetCard: (id: string) => Promise<void>;
   /** 清除项目日志 */
-  clearProjectLogs: (cardId: string) => void;
+  clearProjectLogs: (cardId: string, logType?: 'file' | 'git' | 'all') => void;
 
   // ========== 删除确认模态框 ==========
   /** 待删除的项目 */
@@ -522,11 +522,16 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   /**
    * 清除项目日志
    * @description 清空指定项目的日志输出
+   * @param cardId - 项目 ID
+   * @param logType - 日志类型：'file' | 'git' | 'all'（默认 'all'）
    */
-  const clearProjectLogs = (cardId: string) => {
+  const clearProjectLogs = (cardId: string, logType: 'file' | 'git' | 'all' = 'all') => {
     setProjectLogs((prev) => ({
       ...prev,
-      [cardId]: { fileOutput: "", gitOutput: "" },
+      [cardId]: {
+        fileOutput: logType === 'git' ? (prev[cardId]?.fileOutput || "") : "",
+        gitOutput: logType === 'file' ? (prev[cardId]?.gitOutput || "") : "",
+      },
     }));
   };
 
