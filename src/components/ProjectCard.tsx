@@ -40,6 +40,10 @@ interface ProjectCardProps {
   onConfirmCommit: (card: ProjectCardData) => void;
   /** 重置回调 */
   onReset: (id: string) => void;
+  /** 切换自动监听回调 */
+  onToggleAutoWatch: (id: string) => void;
+  /** 当前是否正在监听 */
+  watchActive: boolean;
 }
 
 /**
@@ -76,6 +80,8 @@ export default function ProjectCard({
   onExecute,
   onConfirmCommit,
   onReset,
+  onToggleAutoWatch,
+  watchActive,
 }: ProjectCardProps) {
   // 使用目录操作 Hook
   const { selectSourceDirectory, selectTargetDirectory, refreshTargetEntries } = useDirectoryOperations();
@@ -232,6 +238,13 @@ export default function ProjectCard({
     onUpdateCard(card.id, { moveMode: mode });
   }, [card.id, onUpdateCard]);
 
+  /**
+   * 切换自动监听
+   */
+  const handleToggleAutoWatch = useCallback(() => {
+    onToggleAutoWatch(card.id);
+  }, [card.id, onToggleAutoWatch]);
+
   // 是否正在执行（禁用操作按钮）
   const isExecuting = card.status === "copying" || card.status === "committing";
 
@@ -269,6 +282,23 @@ export default function ProjectCard({
             {card.sourcePath || "未选择"}
           </div>
           <div className="section-hint">前端 dist 文件夹</div>
+
+          {/* 自动监听 Switch */}
+          <div className="auto-watch-switch-row">
+            <span className="switch-label">自动监听</span>
+            <label className="switch">
+              <input
+                type="checkbox"
+                checked={watchActive}
+                onChange={handleToggleAutoWatch}
+                disabled={isExecuting || !card.sourcePath}
+              />
+              <span className="slider"></span>
+            </label>
+          </div>
+          {watchActive && (
+            <div className="auto-watch-status">🟢 监听中，等待文件变化...</div>
+          )}
         </div>
 
         {/* 目标目录 */}

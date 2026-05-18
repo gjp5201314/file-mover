@@ -365,12 +365,54 @@ export const projectService = {
           isDirectory: e.isDirectory ?? true
         })),
         commitMode,
+        autoWatch: false,
         status: "idle" as const,
         message: "",
         progress: 0,
       };
     });
-  }
+  },
+
+  // ========== 文件监听（Auto Watch） ==========
+
+  /**
+   * 开始监听源目录
+   * @description 后台监听打包目录的文件变化，自动触发部署
+   *
+   * @param projectId - 项目 ID
+   * @param path - 要监听的源目录
+   */
+  async startWatch(projectId: string, path: string): Promise<void> {
+    await invoke("start_watch", { projectId, path });
+  },
+
+  /**
+   * 停止监听源目录
+   * @description 停止指定项目的文件监听
+   *
+   * @param projectId - 项目 ID
+   */
+  async stopWatch(projectId: string): Promise<void> {
+    await invoke("stop_watch", { projectId });
+  },
+
+  /**
+   * 停止所有监听
+   * @description 停止所有项目的文件监听（应用关闭前调用）
+   */
+  async stopAllWatches(): Promise<void> {
+    await invoke("stop_all_watches");
+  },
+
+  /**
+   * 获取监听状态
+   * @description 获取所有正在被监听的项目 ID 列表
+   *
+   * @returns Promise<string[]> 正在监听的项目 ID 列表
+   */
+  async getWatchStatuses(): Promise<string[]> {
+    return await invoke<string[]>("get_watch_statuses");
+  },
 };
 
 /**

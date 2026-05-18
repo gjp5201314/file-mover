@@ -56,6 +56,8 @@ function AppContent() {
     handleManualCommitCancel,
     importConfig,
     exportConfig,
+    toggleAutoWatch,
+    watchStates,
   } = useProject();
   const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
 
@@ -86,6 +88,8 @@ function AppContent() {
               onExecute={executeCard}
               onConfirmCommit={confirmCommit}
               onReset={resetCard}
+              onToggleAutoWatch={toggleAutoWatch}
+              watchActive={watchStates[activeCard.id] || false}
             />
           </div>
 

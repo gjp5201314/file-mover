@@ -107,6 +107,19 @@ export interface ProjectCardData {
    */
   commitMode: "auto" | "manual" | "none";
 
+  /** 是否开启自动化监听
+   * 开启后，后台监听源目录（打包目录）的文件变化
+   * 检测到文件更新（连续 3 秒无变化）后，自动执行部署流程
+   * 实现"打包即部署"的自动化工作流
+   *
+   * 适用场景：
+   * - 开发过程中频繁构建，希望自动部署到测试环境
+   * - CI/CD 流程的本地化补充
+   *
+   * 注意：仅当 moveMode 为 copy 时建议使用
+   */
+  autoWatch: boolean;
+
   /** 运行时状态
    * - idle: 初始状态，等待执行
    * - copying: 正在复制文件

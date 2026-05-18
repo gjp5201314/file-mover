@@ -26,7 +26,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import type { ProjectCardData } from "../types";
 import { projectService } from "../services/projectService";
-import { useFileOperationEvents, CopyProgress, GitOutput, FileOperationLog } from "../hooks/useFileOperationEvents";
+import { useFileOperationEvents, CopyProgress, GitOutput, FileOperationLog, WatchTrigger } from "../hooks/useFileOperationEvents";
 
 /**
  * 项目日志数据
@@ -119,6 +119,12 @@ interface ProjectContextValue {
   importConfig: () => Promise<void>;
   /** 导出配置 */
   exportConfig: () => Promise<void>;
+
+  // ========== 自动监听 ==========
+  /** 各项目的监听状态（true=正在监听） */
+  watchStates: Record<string, boolean>;
+  /** 切换自动监听 */
+  toggleAutoWatch: (id: string) => Promise<void>;
 }
 
 /**
@@ -179,6 +185,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [pendingCommit, setPendingCommit] = useState<PendingCommit | null>(null);
   const [showManualCommitModal, setShowManualCommitModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [watchStates, setWatchStates] = useState<Record<string, boolean>>({});
 
   // 使用 ref 保持对最新 cards 的引用
   // 解决异步回调中访问旧状态的问题
@@ -204,6 +211,13 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       setActiveTab(null);
     }
   }, [cards, activeTab]);
+
+  // 组件卸载时停止所有监听
+  useEffect(() => {
+    return () => {
+      projectService.stopAllWatches();
+    };
+  }, []);
 
   // ========== 事件监听 ==========
   // 订阅后端事件，实时更新 UI
@@ -266,6 +280,19 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     onError: useCallback((error: string) => {
       console.error("Error:", error);
     }, []),
+
+    // 监听触发：后端检测到源目录文件变化后自动执行部署
+    onWatchTrigger: useCallback((trigger: WatchTrigger) => {
+      const cardId = trigger.cardId;
+      const card = cardsRef.current.find((c) => c.id === cardId);
+      if (card && card.autoWatch) {
+        const currentCard = cardsRef.current.find((c) => c.id === cardId);
+        if (currentCard && (currentCard.status === "copying" || currentCard.status === "committing")) {
+          return;
+        }
+        executeCardRef.current(cardId);
+      }
+    }, []),
   });
 
   // ========== 数据加载 ==========
@@ -300,6 +327,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       clearTargetFolders: [],
       clearTargetAllEntries: [],
       commitMode: "auto",
+      autoWatch: false,
       status: "idle",
       message: "",
       progress: 0,
@@ -338,6 +366,16 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
    */
   const confirmDeleteCard = async () => {
     if (!pendingDelete) return;
+
+    // 如果该项目正在被监听，先停止监听
+    if (watchStates[pendingDelete.id]) {
+      try {
+        await projectService.stopWatch(pendingDelete.id);
+      } catch (err) {
+        console.error("停止监听失败:", err);
+      }
+    }
+
     const updatedCards = cards.filter((card) => card.id !== pendingDelete.id);
     setCards(updatedCards);
     await projectService.saveConfig(updatedCards);
@@ -419,6 +457,11 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // 使用 ref 保持对最新 executeCard 的引用
+  // 解决 onWatchTrigger 回调中访问旧函数的问题
+  const executeCardRef = useRef(executeCard);
+  executeCardRef.current = executeCard;
+
   /**
    * 请求提交（确认模式）
    * @description 用于 ready 状态后的提交确认
@@ -498,6 +541,47 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     setShowManualCommitModal(false);
   };
 
+  // ========== 自动监听 ==========
+  /**
+   * 切换自动监听
+   * @description 开启/关闭对打包目录的文件变化监听
+   *
+   * 开启流程：
+   * 1. 检查源目录是否已配置
+   * 2. 调用后端 start_watch 启动文件监听
+   * 3. 更新 watchStates 状态
+   *
+   * 关闭流程：
+   * 1. 调用后端 stop_watch 停止监听
+   * 2. 更新 watchStates 状态
+   */
+  const toggleAutoWatch = async (id: string) => {
+    const card = cards.find((c) => c.id === id);
+    if (!card) return;
+
+    if (watchStates[id]) {
+      try {
+        await projectService.stopWatch(id);
+        setWatchStates((prev) => ({ ...prev, [id]: false }));
+        await updateCard(id, { autoWatch: false, message: "" });
+      } catch (err) {
+        console.error("停止监听失败:", err);
+      }
+    } else {
+      if (!card.sourcePath) {
+        await updateCard(id, { status: "error", message: "请先选择源目录" });
+        return;
+      }
+      try {
+        await projectService.startWatch(id, card.sourcePath);
+        setWatchStates((prev) => ({ ...prev, [id]: true }));
+        await updateCard(id, { autoWatch: true, status: "idle", message: "自动监听已开启，等待文件变化..." });
+      } catch (err) {
+        await updateCard(id, { status: "error", message: `开启监听失败: ${err}` });
+      }
+    }
+  };
+
   // ========== 配置导入/导出 ==========
   /**
    * 导入配置
@@ -574,6 +658,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     executeCommit,
     executeManualCommit,
     handleManualCommitCancel,
+    toggleAutoWatch,
+    watchStates,
     importConfig,
     exportConfig,
   };

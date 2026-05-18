@@ -1,10 +1,15 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs;
 use std::os::windows::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::{mpsc, Arc, Mutex};
+use std::thread;
+use std::time::{Duration, Instant};
 use tauri::Emitter;
 use tauri::Manager;
 
@@ -175,6 +180,24 @@ pub struct FileOperationLog {
 pub struct GitOutput {
     pub card_id: String,
     pub output: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct WatchTrigger {
+    pub card_id: String,
+}
+
+struct NotifyHandler(mpsc::Sender<Result<Event, notify::Error>>);
+
+impl notify::EventHandler for NotifyHandler {
+    fn handle_event(&mut self, event: Result<Event, notify::Error>) {
+        let _ = self.0.send(event);
+    }
+}
+
+struct WatcherState {
+    watchers: HashMap<String, RecommendedWatcher>,
 }
 
 fn remove_dir_all_recursive(path: &Path) -> Result<(), String> {
@@ -754,10 +777,113 @@ fn set_autostart(enabled: bool) -> Result<(), String> {
     Ok(())
 }
 
+// ========== 文件监听（Auto Watch） ==========
+
+#[tauri::command]
+async fn start_watch(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, Arc<Mutex<WatcherState>>>,
+    project_id: String,
+    path: String,
+) -> Result<(), String> {
+    let path_buf = PathBuf::from(&path);
+
+    if !path_buf.exists() || !path_buf.is_dir() {
+        return Err("源目录不存在或不是有效的目录".to_string());
+    }
+
+    {
+        let state = state.lock().map_err(|e| e.to_string())?;
+        if state.watchers.contains_key(&project_id) {
+            return Err("该项目已在监听中".to_string());
+        }
+    }
+
+    let (tx, rx) = mpsc::channel();
+    let handler = NotifyHandler(tx);
+    let mut watcher = RecommendedWatcher::new(handler, Config::default())
+        .map_err(|e| format!("创建文件监听器失败: {}", e))?;
+    watcher
+        .watch(&path_buf, RecursiveMode::Recursive)
+        .map_err(|e| format!("无法监听目录: {}", e))?;
+
+    {
+        let mut state = state.lock().map_err(|e| e.to_string())?;
+        state.watchers.insert(project_id.clone(), watcher);
+    }
+
+    let app_clone = app.clone();
+    let pid = project_id.clone();
+    thread::spawn(move || {
+        let mut last_event_time: Option<Instant> = None;
+        let debounce = Duration::from_secs(3);
+
+        loop {
+            match rx.recv_timeout(Duration::from_millis(500)) {
+                Ok(Ok(event)) => {
+                    match event.kind {
+                        EventKind::Create(_) | EventKind::Modify(_) => {
+                            last_event_time = Some(Instant::now());
+                        }
+                        _ => {}
+                    }
+                }
+                Ok(Err(_)) => {}
+                Err(mpsc::RecvTimeoutError::Timeout) => {
+                    if let Some(last) = last_event_time {
+                        if last.elapsed() >= debounce {
+                            let _ = app_clone.emit(
+                                "watch-trigger",
+                                WatchTrigger {
+                                    card_id: pid.clone(),
+                                },
+                            );
+                            last_event_time = Some(Instant::now());
+                        }
+                    }
+                }
+                Err(mpsc::RecvTimeoutError::Disconnected) => break,
+            }
+        }
+    });
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn stop_watch(
+    state: tauri::State<'_, Arc<Mutex<WatcherState>>>,
+    project_id: String,
+) -> Result<(), String> {
+    let mut state = state.lock().map_err(|e| e.to_string())?;
+    state.watchers.remove(&project_id);
+    Ok(())
+}
+
+#[tauri::command]
+async fn stop_all_watches(
+    state: tauri::State<'_, Arc<Mutex<WatcherState>>>,
+) -> Result<(), String> {
+    let mut state = state.lock().map_err(|e| e.to_string())?;
+    state.watchers.clear();
+    Ok(())
+}
+
+#[tauri::command]
+async fn get_watch_statuses(
+    state: tauri::State<'_, Arc<Mutex<WatcherState>>>,
+) -> Result<Vec<String>, String> {
+    let state = state.lock().map_err(|e| e.to_string())?;
+    Ok(state.watchers.keys().cloned().collect())
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
+        .manage(Arc::new(Mutex::new(WatcherState {
+            watchers: HashMap::new(),
+        })))
         .invoke_handler(tauri::generate_handler![
             copy_and_prepare,
             git_commit_push,
@@ -772,7 +898,11 @@ fn main() {
             get_git_proxy,
             clear_git_proxy,
             get_autostart,
-            set_autostart
+            set_autostart,
+            start_watch,
+            stop_watch,
+            stop_all_watches,
+            get_watch_statuses
         ])
         .run(tauri::generate_context!())
         .expect("启动应用失败");

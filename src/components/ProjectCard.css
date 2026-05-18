@@ -2,10 +2,10 @@
   background: white;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  padding: 16px;
+  padding: 8px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   transition: all 0.2s;
   border: 2px solid transparent;
 }
@@ -92,7 +92,7 @@
 .path-section {
   background: #f9fafb;
   border-radius: 6px;
-  padding: 10px;
+  padding: 6px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -450,4 +450,30 @@
   background: #b91c1c;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+/* 自动监听 Switch 样式 */
+.auto-watch-switch-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.auto-watch-switch-row .switch-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.auto-watch-status {
+  font-size: 11px;
+  color: #059669;
+  margin-top: 4px;
+  padding: 4px 8px;
+  background: #d1fae5;
+  border-radius: 4px;
+  text-align: center;
 }

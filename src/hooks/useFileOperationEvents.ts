@@ -59,6 +59,15 @@ export interface FileOperationLog {
 }
 
 /**
+ * 监听触发事件数据
+ * @interface WatchTrigger
+ * @property cardId - 触发的项目卡片 ID（backend 检测到文件变化后发送）
+ */
+export interface WatchTrigger {
+  cardId: string;
+}
+
+/**
  * Hook 配置选项
  * @interface UseFileOperationEventsOptions
  * @description 所有回调函数都是可选的，按需订阅
@@ -72,6 +81,8 @@ export interface UseFileOperationEventsOptions {
   onFileOperation?: (log: FileOperationLog) => void;
   /** 错误回调 - 统一处理所有错误 */
   onError?: (error: string) => void;
+  /** 监听触发回调 - 后台检测到源目录文件变化时触发 */
+  onWatchTrigger?: (trigger: WatchTrigger) => void;
 }
 
 /**
@@ -135,6 +146,13 @@ export function useFileOperationEvents(options: UseFileOperationEventsOptions) {
         optionsRef.current.onError?.(event.payload);
       });
       unlistenError.then((fn) => unlistenersRef.current.push(fn));
+
+      // 订阅监听触发事件
+      // 后端检测到源目录文件变化后（去抖 3 秒）发送
+      const unlistenWatchTrigger = listen<WatchTrigger>("watch-trigger", (event) => {
+        optionsRef.current.onWatchTrigger?.(event.payload);
+      });
+      unlistenWatchTrigger.then((fn) => unlistenersRef.current.push(fn));
     };
 
     setupListeners();
