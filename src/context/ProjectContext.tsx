@@ -291,17 +291,13 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     // 监听触发：后端检测到源目录文件变化后自动执行部署
     onWatchTrigger: useCallback((trigger: WatchTrigger) => {
       const cardId = trigger.cardId;
-      console.log("[Watch] 收到 watch-trigger 事件, cardId:", cardId);
       
       const card = cardsRef.current.find((c) => c.id === cardId);
-      console.log("[Watch] 查找卡片:", card ? `找到 (autoWatch=${card.autoWatch}, status=${card.status})` : "未找到");
       
       if (card && card.autoWatch) {
         const currentCard = cardsRef.current.find((c) => c.id === cardId);
-        console.log("[Watch] 检查当前状态:", currentCard?.status);
         
         if (currentCard && (currentCard.status === "copying" || currentCard.status === "committing")) {
-          console.log("[Watch] 当前正在执行中，跳过此次触发");
           return;
         }
         
@@ -310,14 +306,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         const cooldown = 10000; // 10秒冷却时间
         
         if (now - lastTime < cooldown) {
-          console.log(`[Watch] 冷却中，距离上次执行 ${Math.round((cooldown - (now - lastTime)) / 1000)} 秒后可以再次执行`);
           return;
         }
         
-        console.log("[Watch] 开始执行部署任务");
         executeCardRef.current(cardId);
-      } else {
-        console.log("[Watch] 卡片未启用自动监听或未找到卡片");
       }
     }, []),
   });
@@ -434,7 +426,6 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     }
 
     // 记录执行开始时间，用于冷却机制
-    console.log("[Watch] 记录执行开始时间, cardId:", id);
     setLastExecutionTime((prev) => ({ ...prev, [id]: Date.now() }));
 
     await updateCard(id, { status: "copying", progress: 0, message: "准备执行部署流程..." });
@@ -495,12 +486,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
    * @param id - 项目 ID
    */
   const stopCard = async (id: string) => {
-    console.log("[Stop] 停止请求, cardId:", id);
     try {
       await projectService.stopOperation(id);
       await updateCard(id, { status: "idle", message: "操作已停止", progress: 0 });
     } catch (err) {
-      console.error("[Stop] 停止失败:", err);
       await updateCard(id, { status: "idle", message: "停止失败", progress: 0 });
     }
   };

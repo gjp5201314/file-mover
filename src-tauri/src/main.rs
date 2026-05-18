@@ -991,7 +991,6 @@ fn has_newer_files(source_dir: &Path, target_dir: &Path) -> Result<bool, String>
         
         if let Some(&target_time) = target_file_map.get(&relative) {
             if source_time > target_time {
-                eprintln!("[Watch] 发现更新的文件: {:?}, 源时间: {:?}, 目标时间: {:?}", relative, source_time, target_time);
                 return Ok(true);
             }
         }
@@ -1008,7 +1007,6 @@ async fn start_watch(
     path: String,
     target_path: String,
 ) -> Result<(), String> {
-    eprintln!("[Watch] start_watch 被调用, project_id: {}, source: {:?}, target: {:?}", project_id, path, target_path);
     let source_path_buf = PathBuf::from(&path);
     let target_path_buf = PathBuf::from(&target_path);
 
@@ -1044,7 +1042,6 @@ async fn start_watch(
     let pid = project_id.clone();
     let source_clone = source_path_buf.clone();
     let target_clone = target_path_buf.clone();
-    eprintln!("[Watch] 监听线程启动, project_id: {}, source: {:?}, target: {:?}", project_id, path, target_path);
     
     thread::spawn(move || {
         let mut last_event_time: Option<Instant> = None;
@@ -1054,11 +1051,9 @@ async fn start_watch(
         loop {
             // 检查源目录是否存在
             if !source_clone.exists() && !directory_deleted {
-                eprintln!("[Watch] 源目录被删除，等待重新出现...");
                 directory_deleted = true;
                 last_event_time = None;
             } else if source_clone.exists() && directory_deleted {
-                eprintln!("[Watch] 源目录已恢复，重新初始化监听...");
                 directory_deleted = false;
                 last_event_time = Some(Instant::now());
             }
@@ -1071,30 +1066,24 @@ async fn start_watch(
             
             match rx.recv_timeout(Duration::from_millis(500)) {
                 Ok(Ok(event)) => {
-                    eprintln!("[Watch] 检测到文件事件: {:?}", event.kind);
                     match event.kind {
                         EventKind::Create(_) | EventKind::Modify(_) => {
                             last_event_time = Some(Instant::now());
                         }
                         EventKind::Remove(_) => {
-                            eprintln!("[Watch] 检测到文件删除事件");
                             last_event_time = Some(Instant::now());
                         }
                         _ => {}
                     }
                 }
-                Ok(Err(e)) => {
-                    eprintln!("[Watch] 监听错误: {:?}", e);
+                Ok(Err(_)) => {
                 }
                 Err(mpsc::RecvTimeoutError::Timeout) => {
                     if let Some(last) = last_event_time {
                         if last.elapsed() >= debounce {
-                            eprintln!("[Watch] 去抖动完成，开始检查文件更新...");
-                            
                             if source_clone.exists() {
                                 match has_newer_files(&source_clone, &target_clone) {
                                     Ok(true) => {
-                                        eprintln!("[Watch] 发现新文件/更新，发送 watch-trigger 事件, card_id: {}", pid);
                                         let _ = app_clone.emit(
                                             "watch-trigger",
                                             WatchTrigger {
@@ -1103,14 +1092,10 @@ async fn start_watch(
                                         );
                                     }
                                     Ok(false) => {
-                                        eprintln!("[Watch] 没有文件更新，跳过");
                                     }
-                                    Err(e) => {
-                                        eprintln!("[Watch] 检查文件更新失败: {:?}", e);
+                                    Err(_) => {
                                     }
                                 }
-                            } else {
-                                eprintln!("[Watch] 源目录不存在，跳过检查");
                             }
                             
                             last_event_time = Some(Instant::now());
@@ -1118,7 +1103,6 @@ async fn start_watch(
                     }
                 }
                 Err(mpsc::RecvTimeoutError::Disconnected) => {
-                    eprintln!("[Watch] 监听通道断开");
                     break;
                 }
             }
@@ -1160,7 +1144,6 @@ async fn stop_operation(
     state: tauri::State<'_, Arc<Mutex<CancellationState>>>,
     card_id: String,
 ) -> Result<(), String> {
-    eprintln!("[Stop] 停止操作被请求, card_id: {}", card_id);
     let mut state = state.lock().map_err(|e| e.to_string())?;
     state.cancelled.insert(card_id, true);
     Ok(())
