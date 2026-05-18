@@ -36,6 +36,8 @@ interface ProjectCardProps {
   onDeleteCard: (card: ProjectCardData) => void;
   /** 执行部署回调 */
   onExecute: (id: string) => void;
+  /** 停止执行回调 */
+  onStop: (id: string) => void;
   /** 确认提交回调 */
   onConfirmCommit: (card: ProjectCardData) => void;
   /** 重置回调 */
@@ -78,6 +80,7 @@ export default function ProjectCard({
   onUpdateCard,
   onDeleteCard,
   onExecute,
+  onStop,
   onConfirmCommit,
   onReset,
   onToggleAutoWatch,
@@ -244,6 +247,13 @@ export default function ProjectCard({
   const handleToggleAutoWatch = useCallback(() => {
     onToggleAutoWatch(card.id);
   }, [card.id, onToggleAutoWatch]);
+
+  /**
+   * 停止执行
+   */
+  const handleStop = useCallback(() => {
+    onStop(card.id);
+  }, [card.id, onStop]);
 
   // 是否正在执行（禁用操作按钮）
   const isExecuting = card.status === "copying" || card.status === "committing";
@@ -508,17 +518,27 @@ export default function ProjectCard({
             {card.status === "error" ? "重试" : "重置"}
           </button>
         )}
-        {/* copying 状态：显示执行中 */}
+        {/* copying 状态：显示执行中 + 停止按钮 */}
         {card.status === "copying" && (
-          <button className="action-btn execute-btn" disabled>
-            执行中...
-          </button>
+          <div className="action-buttons-row">
+            <button className="action-btn execute-btn" disabled>
+              执行中...
+            </button>
+            <button className="action-btn stop-btn" onClick={handleStop}>
+              停止
+            </button>
+          </div>
         )}
-        {/* committing 状态：显示提交中 */}
+        {/* committing 状态：显示提交中 + 停止按钮 */}
         {card.status === "committing" && (
-          <button className="action-btn confirm-btn" disabled>
-            提交中...
-          </button>
+          <div className="action-buttons-row">
+            <button className="action-btn confirm-btn" disabled>
+              提交中...
+            </button>
+            <button className="action-btn stop-btn" onClick={handleStop}>
+              停止
+            </button>
+          </div>
         )}
       </div>
     </div>

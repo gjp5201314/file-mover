@@ -203,6 +203,17 @@ struct WatcherState {
     watchers: HashMap<String, RecommendedWatcher>,
 }
 
+struct CancellationState {
+    cancelled: HashMap<String, bool>,
+}
+
+fn check_cancelled(card_id: &str, state: &CancellationState) -> Result<(), String> {
+    if state.cancelled.get(card_id).copied().unwrap_or(false) {
+        return Err("操作已被用户停止".to_string());
+    }
+    Ok(())
+}
+
 fn remove_dir_all_recursive(path: &Path) -> Result<(), String> {
     if path.is_dir() {
         for entry in fs::read_dir(path).map_err(|e| e.to_string())? {
@@ -254,12 +265,23 @@ fn copy_dir_recursive(src: &Path, dst: &Path, is_cut: bool) -> Result<(), String
 #[tauri::command]
 async fn git_pull(
     app: tauri::AppHandle,
+    state: tauri::State<'_, Arc<Mutex<CancellationState>>>,
     target: String,
     card_id: String,
 ) -> Result<String, String> {
+    {
+        let state = state.lock().map_err(|e| e.to_string())?;
+        check_cancelled(&card_id, &state)?;
+    }
+    
     let target_path = Path::new(&target);
     
     is_path_safe(target_path)?;
+    
+    {
+        let state = state.lock().map_err(|e| e.to_string())?;
+        check_cancelled(&card_id, &state)?;
+    }
     
     if !target_path.exists() {
         return Err("目标目录不存在".to_string());
@@ -270,6 +292,11 @@ async fn git_pull(
         .args(["-C", &target, "pull"])
         .output()
         .map_err(|e| format!("git pull 失败: {}", e))?;
+
+    {
+        let state = state.lock().map_err(|e| e.to_string())?;
+        check_cancelled(&card_id, &state)?;
+    }
 
     let pull_str = String::from_utf8_lossy(&git_pull_output.stdout).to_string();
     let pull_err = String::from_utf8_lossy(&git_pull_output.stderr).to_string();
@@ -288,6 +315,7 @@ async fn git_pull(
 #[tauri::command]
 async fn copy_and_prepare(
     app: tauri::AppHandle,
+    state: tauri::State<'_, Arc<Mutex<CancellationState>>>,
     source: String,
     target: String,
     auto_pull: bool,
@@ -299,7 +327,17 @@ async fn copy_and_prepare(
     let source_path = Path::new(&source);
     let target_path = Path::new(&target);
     
+    {
+        let state = state.lock().map_err(|e| e.to_string())?;
+        check_cancelled(&card_id, &state)?;
+    }
+    
     validate_source_target_paths(source_path, target_path)?;
+    
+    {
+        let state = state.lock().map_err(|e| e.to_string())?;
+        check_cancelled(&card_id, &state)?;
+    }
     
     SecurityAuditEvent::new(
         "FILE_OPERATION_START",
@@ -329,11 +367,21 @@ async fn copy_and_prepare(
             message: "🔄 开始执行 git pull...".to_string(),
         });
 
+        {
+            let state = state.lock().map_err(|e| e.to_string())?;
+            check_cancelled(&card_id, &state)?;
+        }
+
         let git_pull_output = Command::new("git")
             .creation_flags(CREATE_NO_WINDOW)
             .args(["-C", &target, "pull"])
             .output()
             .map_err(|e| format!("git pull 失败: {}", e))?;
+
+        {
+            let state = state.lock().map_err(|e| e.to_string())?;
+            check_cancelled(&card_id, &state)?;
+        }
 
         let pull_str = String::from_utf8_lossy(&git_pull_output.stdout).to_string();
         let pull_err = String::from_utf8_lossy(&git_pull_output.stderr).to_string();
@@ -345,6 +393,11 @@ async fn copy_and_prepare(
         if !git_pull_output.status.success() {
             return Err(format!("git pull 失败: {}", pull_err));
         }
+    }
+
+    {
+        let state = state.lock().map_err(|e| e.to_string())?;
+        check_cancelled(&card_id, &state)?;
     }
 
     let clear_mode_desc: String = match clear_target_mode.as_str() {
@@ -373,6 +426,10 @@ async fn copy_and_prepare(
                     message: format!("🗑️ 清空模式: 清空指定文件夹 [{}]", folders_str),
                 });
                 for folder in &clear_target_folders {
+                    {
+                        let state = state.lock().map_err(|e| e.to_string())?;
+                        check_cancelled(&card_id, &state)?;
+                    }
                     let folder_path = target_path.join(folder);
                     if folder_path.exists() && folder_path.is_dir() {
                         remove_dir_all_recursive(&folder_path)?;
@@ -391,6 +448,11 @@ async fn copy_and_prepare(
             String::from("不清空")
         }
     };
+
+    {
+        let state = state.lock().map_err(|e| e.to_string())?;
+        check_cancelled(&card_id, &state)?;
+    }
 
     let is_cut = move_mode == "cut";
     let operation_desc = if is_cut { String::from("移动") } else { String::from("复制") };
@@ -432,13 +494,24 @@ async fn copy_and_prepare(
 #[tauri::command]
 async fn git_commit_push(
     app: tauri::AppHandle,
+    state: tauri::State<'_, Arc<Mutex<CancellationState>>>,
     target: String,
     message: String,
     card_id: String,
 ) -> Result<(), String> {
+    {
+        let state = state.lock().map_err(|e| e.to_string())?;
+        check_cancelled(&card_id, &state)?;
+    }
+    
     let target_path = Path::new(&target);
     
     is_path_safe(target_path)?;
+    
+    {
+        let state = state.lock().map_err(|e| e.to_string())?;
+        check_cancelled(&card_id, &state)?;
+    }
     
     if !target_path.exists() {
         SecurityAuditEvent::new(
@@ -475,6 +548,11 @@ async fn git_commit_push(
         return Err("Commit 消息包含非法字符".to_string());
     }
     
+    {
+        let state = state.lock().map_err(|e| e.to_string())?;
+        check_cancelled(&card_id, &state)?;
+    }
+    
     SecurityAuditEvent::new(
         "GIT_COMMIT_PUSH",
         &format!("开始 Git 提交: 消息={}", trimmed_message),
@@ -486,6 +564,11 @@ async fn git_commit_push(
         .args(["-C", &target, "add", "."])
         .output()
         .map_err(|e| format!("git add 失败: {}", e))?;
+
+    {
+        let state = state.lock().map_err(|e| e.to_string())?;
+        check_cancelled(&card_id, &state)?;
+    }
 
     let add_str = String::from_utf8_lossy(&git_add_output.stdout).to_string();
     let add_err = String::from_utf8_lossy(&git_add_output.stderr).to_string();
@@ -503,6 +586,11 @@ async fn git_commit_push(
         .args(["-C", &target, "commit", "-m", &trimmed_message])
         .output()
         .map_err(|e| format!("git commit 失败: {}", e))?;
+
+    {
+        let state = state.lock().map_err(|e| e.to_string())?;
+        check_cancelled(&card_id, &state)?;
+    }
 
     let commit_str = String::from_utf8_lossy(&git_commit_output.stdout).to_string();
     let commit_err = String::from_utf8_lossy(&git_commit_output.stderr).to_string();
@@ -523,6 +611,11 @@ async fn git_commit_push(
         .args(["-C", &target, "push"])
         .output()
         .map_err(|e| format!("git push 失败: {}", e))?;
+
+    {
+        let state = state.lock().map_err(|e| e.to_string())?;
+        check_cancelled(&card_id, &state)?;
+    }
 
     let push_str = String::from_utf8_lossy(&git_push_output.stdout).to_string();
     let push_err = String::from_utf8_lossy(&git_push_output.stderr).to_string();
@@ -849,17 +942,82 @@ fn hide_window(app: AppHandle) -> Result<(), String> {
 
 // ========== 文件监听（Auto Watch） ==========
 
+fn get_all_files_recursive(path: &Path) -> Result<Vec<(PathBuf, std::time::SystemTime)>, String> {
+    let mut files = Vec::new();
+    
+    if !path.is_dir() {
+        return Ok(files);
+    }
+    
+    fn collect_files(dir: &Path, files: &mut Vec<(PathBuf, std::time::SystemTime)>) -> Result<(), String> {
+        for entry in fs::read_dir(dir).map_err(|e| e.to_string())? {
+            let entry = entry.map_err(|e| e.to_string())?;
+            let path = entry.path();
+            
+            if path.is_dir() {
+                collect_files(&path, files)?;
+            } else if path.is_file() {
+                let metadata = fs::metadata(&path).map_err(|e| e.to_string())?;
+                if let Ok(modified) = metadata.modified() {
+                    files.push((path, modified));
+                }
+            }
+        }
+        Ok(())
+    }
+    
+    collect_files(path, &mut files)?;
+    Ok(files)
+}
+
+fn has_newer_files(source_dir: &Path, target_dir: &Path) -> Result<bool, String> {
+    let source_files = get_all_files_recursive(source_dir)?;
+    let target_files = get_all_files_recursive(target_dir)?;
+    
+    let target_file_map: std::collections::HashMap<String, std::time::SystemTime> = target_files
+        .into_iter()
+        .map(|(p, t)| {
+            let relative = p.strip_prefix(target_dir)
+                .map(|r| r.to_string_lossy().to_string())
+                .unwrap_or_else(|_| p.to_string_lossy().to_string());
+            (relative, t)
+        })
+        .collect();
+    
+    for (source_path, source_time) in source_files {
+        let relative = source_path.strip_prefix(source_dir)
+            .map(|r| r.to_string_lossy().to_string())
+            .unwrap_or_else(|_| source_path.to_string_lossy().to_string());
+        
+        if let Some(&target_time) = target_file_map.get(&relative) {
+            if source_time > target_time {
+                eprintln!("[Watch] 发现更新的文件: {:?}, 源时间: {:?}, 目标时间: {:?}", relative, source_time, target_time);
+                return Ok(true);
+            }
+        }
+    }
+    
+    Ok(false)
+}
+
 #[tauri::command]
 async fn start_watch(
     app: tauri::AppHandle,
     state: tauri::State<'_, Arc<Mutex<WatcherState>>>,
     project_id: String,
     path: String,
+    target_path: String,
 ) -> Result<(), String> {
-    let path_buf = PathBuf::from(&path);
+    eprintln!("[Watch] start_watch 被调用, project_id: {}, source: {:?}, target: {:?}", project_id, path, target_path);
+    let source_path_buf = PathBuf::from(&path);
+    let target_path_buf = PathBuf::from(&target_path);
 
-    if !path_buf.exists() || !path_buf.is_dir() {
+    if !source_path_buf.exists() || !source_path_buf.is_dir() {
         return Err("源目录不存在或不是有效的目录".to_string());
+    }
+
+    if !target_path_buf.exists() || !target_path_buf.is_dir() {
+        return Err("目标目录不存在或不是有效的目录".to_string());
     }
 
     {
@@ -874,7 +1032,7 @@ async fn start_watch(
     let mut watcher = RecommendedWatcher::new(handler, Config::default())
         .map_err(|e| format!("创建文件监听器失败: {}", e))?;
     watcher
-        .watch(&path_buf, RecursiveMode::Recursive)
+        .watch(&source_path_buf, RecursiveMode::Recursive)
         .map_err(|e| format!("无法监听目录: {}", e))?;
 
     {
@@ -884,35 +1042,85 @@ async fn start_watch(
 
     let app_clone = app.clone();
     let pid = project_id.clone();
+    let source_clone = source_path_buf.clone();
+    let target_clone = target_path_buf.clone();
+    eprintln!("[Watch] 监听线程启动, project_id: {}, source: {:?}, target: {:?}", project_id, path, target_path);
+    
     thread::spawn(move || {
         let mut last_event_time: Option<Instant> = None;
-        let debounce = Duration::from_secs(3);
-
+        let debounce = Duration::from_secs(5);
+        let mut directory_deleted = false;
+        
         loop {
+            // 检查源目录是否存在
+            if !source_clone.exists() && !directory_deleted {
+                eprintln!("[Watch] 源目录被删除，等待重新出现...");
+                directory_deleted = true;
+                last_event_time = None;
+            } else if source_clone.exists() && directory_deleted {
+                eprintln!("[Watch] 源目录已恢复，重新初始化监听...");
+                directory_deleted = false;
+                last_event_time = Some(Instant::now());
+            }
+            
+            if directory_deleted {
+                // 等待目录恢复
+                thread::sleep(Duration::from_secs(1));
+                continue;
+            }
+            
             match rx.recv_timeout(Duration::from_millis(500)) {
                 Ok(Ok(event)) => {
+                    eprintln!("[Watch] 检测到文件事件: {:?}", event.kind);
                     match event.kind {
                         EventKind::Create(_) | EventKind::Modify(_) => {
+                            last_event_time = Some(Instant::now());
+                        }
+                        EventKind::Remove(_) => {
+                            eprintln!("[Watch] 检测到文件删除事件");
                             last_event_time = Some(Instant::now());
                         }
                         _ => {}
                     }
                 }
-                Ok(Err(_)) => {}
+                Ok(Err(e)) => {
+                    eprintln!("[Watch] 监听错误: {:?}", e);
+                }
                 Err(mpsc::RecvTimeoutError::Timeout) => {
                     if let Some(last) = last_event_time {
                         if last.elapsed() >= debounce {
-                            let _ = app_clone.emit(
-                                "watch-trigger",
-                                WatchTrigger {
-                                    card_id: pid.clone(),
-                                },
-                            );
+                            eprintln!("[Watch] 去抖动完成，开始检查文件更新...");
+                            
+                            if source_clone.exists() {
+                                match has_newer_files(&source_clone, &target_clone) {
+                                    Ok(true) => {
+                                        eprintln!("[Watch] 发现新文件/更新，发送 watch-trigger 事件, card_id: {}", pid);
+                                        let _ = app_clone.emit(
+                                            "watch-trigger",
+                                            WatchTrigger {
+                                                card_id: pid.clone(),
+                                            },
+                                        );
+                                    }
+                                    Ok(false) => {
+                                        eprintln!("[Watch] 没有文件更新，跳过");
+                                    }
+                                    Err(e) => {
+                                        eprintln!("[Watch] 检查文件更新失败: {:?}", e);
+                                    }
+                                }
+                            } else {
+                                eprintln!("[Watch] 源目录不存在，跳过检查");
+                            }
+                            
                             last_event_time = Some(Instant::now());
                         }
                     }
                 }
-                Err(mpsc::RecvTimeoutError::Disconnected) => break,
+                Err(mpsc::RecvTimeoutError::Disconnected) => {
+                    eprintln!("[Watch] 监听通道断开");
+                    break;
+                }
             }
         }
     });
@@ -947,12 +1155,36 @@ async fn get_watch_statuses(
     Ok(state.watchers.keys().cloned().collect())
 }
 
+#[tauri::command]
+async fn stop_operation(
+    state: tauri::State<'_, Arc<Mutex<CancellationState>>>,
+    card_id: String,
+) -> Result<(), String> {
+    eprintln!("[Stop] 停止操作被请求, card_id: {}", card_id);
+    let mut state = state.lock().map_err(|e| e.to_string())?;
+    state.cancelled.insert(card_id, true);
+    Ok(())
+}
+
+#[tauri::command]
+async fn clear_cancellation(
+    state: tauri::State<'_, Arc<Mutex<CancellationState>>>,
+    card_id: String,
+) -> Result<(), String> {
+    let mut state = state.lock().map_err(|e| e.to_string())?;
+    state.cancelled.remove(&card_id);
+    Ok(())
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .manage(Arc::new(Mutex::new(WatcherState {
             watchers: HashMap::new(),
+        })))
+        .manage(Arc::new(Mutex::new(CancellationState {
+            cancelled: HashMap::new(),
         })))
         .invoke_handler(tauri::generate_handler![
             copy_and_prepare,
@@ -976,7 +1208,9 @@ fn main() {
             start_watch,
             stop_watch,
             stop_all_watches,
-            get_watch_statuses
+            get_watch_statuses,
+            stop_operation,
+            clear_cancellation
         ])
         .setup(|app| {
             let show_item = MenuItem::with_id(app, "show", "显示窗口", true, None::<&str>)?;

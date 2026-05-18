@@ -42,6 +42,7 @@ function AppContent() {
     deleteCard,
     confirmDeleteCard,
     executeCard,
+    stopCard,
     confirmCommit,
     resetCard,
     clearProjectLogs,
@@ -87,6 +88,7 @@ function AppContent() {
               onUpdateCard={updateCard}
               onDeleteCard={deleteCard}
               onExecute={executeCard}
+              onStop={stopCard}
               onConfirmCommit={confirmCommit}
               onReset={resetCard}
               onToggleAutoWatch={toggleAutoWatch}

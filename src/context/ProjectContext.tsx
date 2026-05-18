@@ -81,6 +81,8 @@ interface ProjectContextValue {
   // ========== 执行流程 ==========
   /** 执行项目部署 */
   executeCard: (id: string) => Promise<void>;
+  /** 停止正在执行的项目 */
+  stopCard: (id: string) => Promise<void>;
   /** 请求提交（显示确认对话框） */
   confirmCommit: (card: ProjectCardData) => void;
   /** 重置项目状态 */
@@ -186,11 +188,16 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [showManualCommitModal, setShowManualCommitModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [watchStates, setWatchStates] = useState<Record<string, boolean>>({});
+  const [lastExecutionTime, setLastExecutionTime] = useState<Record<string, number>>({});
 
   // 使用 ref 保持对最新 cards 的引用
   // 解决异步回调中访问旧状态的问题
   const cardsRef = useRef(cards);
   cardsRef.current = cards;
+
+  // 使用 ref 保持对最新 lastExecutionTime 的引用
+  const lastExecutionTimeRef = useRef(lastExecutionTime);
+  lastExecutionTimeRef.current = lastExecutionTime;
 
   // ========== 初始化 ==========
   useEffect(() => {
@@ -284,13 +291,33 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     // 监听触发：后端检测到源目录文件变化后自动执行部署
     onWatchTrigger: useCallback((trigger: WatchTrigger) => {
       const cardId = trigger.cardId;
+      console.log("[Watch] 收到 watch-trigger 事件, cardId:", cardId);
+      
       const card = cardsRef.current.find((c) => c.id === cardId);
+      console.log("[Watch] 查找卡片:", card ? `找到 (autoWatch=${card.autoWatch}, status=${card.status})` : "未找到");
+      
       if (card && card.autoWatch) {
         const currentCard = cardsRef.current.find((c) => c.id === cardId);
+        console.log("[Watch] 检查当前状态:", currentCard?.status);
+        
         if (currentCard && (currentCard.status === "copying" || currentCard.status === "committing")) {
+          console.log("[Watch] 当前正在执行中，跳过此次触发");
           return;
         }
+        
+        const now = Date.now();
+        const lastTime = lastExecutionTimeRef.current[cardId] || 0;
+        const cooldown = 10000; // 10秒冷却时间
+        
+        if (now - lastTime < cooldown) {
+          console.log(`[Watch] 冷却中，距离上次执行 ${Math.round((cooldown - (now - lastTime)) / 1000)} 秒后可以再次执行`);
+          return;
+        }
+        
+        console.log("[Watch] 开始执行部署任务");
         executeCardRef.current(cardId);
+      } else {
+        console.log("[Watch] 卡片未启用自动监听或未找到卡片");
       }
     }, []),
   });
@@ -406,6 +433,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    // 记录执行开始时间，用于冷却机制
+    console.log("[Watch] 记录执行开始时间, cardId:", id);
+    setLastExecutionTime((prev) => ({ ...prev, [id]: Date.now() }));
+
     await updateCard(id, { status: "copying", progress: 0, message: "准备执行部署流程..." });
 
     try {
@@ -454,6 +485,23 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (err) {
       await updateCard(id, { status: "error", message: `失败: ${err}` });
+    }
+  };
+
+  /**
+   * 停止正在执行的项目
+   * @description 向后端发送停止信号，终止正在执行的操作
+   *
+   * @param id - 项目 ID
+   */
+  const stopCard = async (id: string) => {
+    console.log("[Stop] 停止请求, cardId:", id);
+    try {
+      await projectService.stopOperation(id);
+      await updateCard(id, { status: "idle", message: "操作已停止", progress: 0 });
+    } catch (err) {
+      console.error("[Stop] 停止失败:", err);
+      await updateCard(id, { status: "idle", message: "停止失败", progress: 0 });
     }
   };
 
@@ -577,10 +625,14 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         await updateCard(id, { status: "error", message: "请先选择源目录" });
         return;
       }
+      if (!card.targetPath) {
+        await updateCard(id, { status: "error", message: "请先选择目标目录" });
+        return;
+      }
       try {
-        await projectService.startWatch(id, card.sourcePath);
+        await projectService.startWatch(id, card.sourcePath, card.targetPath);
         setWatchStates((prev) => ({ ...prev, [id]: true }));
-        await updateCard(id, { autoWatch: true, status: "idle", message: "自动监听已开启，等待文件变化..." });
+        await updateCard(id, { autoWatch: true, status: "idle", message: "自动监听已开启，等待文件更新..." });
       } catch (err) {
         await updateCard(id, { status: "error", message: `开启监听失败: ${err}` });
       }
@@ -649,6 +701,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     deleteCard,
     confirmDeleteCard,
     executeCard,
+    stopCard,
     confirmCommit,
     resetCard,
     clearProjectLogs,

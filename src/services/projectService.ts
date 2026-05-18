@@ -377,13 +377,14 @@ export const projectService = {
 
   /**
    * 开始监听源目录
-   * @description 后台监听打包目录的文件变化，自动触发部署
+   * @description 后台监听打包目录的文件变化，只有当源文件比目标文件更新时才触发部署
    *
    * @param projectId - 项目 ID
-   * @param path - 要监听的源目录
+   * @param sourcePath - 要监听的源目录
+   * @param targetPath - 目标目录，用于对比文件修改时间
    */
-  async startWatch(projectId: string, path: string): Promise<void> {
-    await invoke("start_watch", { projectId, path });
+  async startWatch(projectId: string, sourcePath: string, targetPath: string): Promise<void> {
+    await invoke("start_watch", { projectId, path: sourcePath, targetPath });
   },
 
   /**
@@ -412,6 +413,26 @@ export const projectService = {
    */
   async getWatchStatuses(): Promise<string[]> {
     return await invoke<string[]>("get_watch_statuses");
+  },
+
+  /**
+   * 停止正在执行的操作
+   * @description 向后端发送停止信号，终止正在执行的文件复制或 Git 操作
+   *
+   * @param cardId - 项目卡片 ID
+   */
+  async stopOperation(cardId: string): Promise<void> {
+    await invoke("stop_operation", { cardId });
+  },
+
+  /**
+   * 清除取消标志
+   * @description 清除项目的取消标志，允许新的操作执行
+   *
+   * @param cardId - 项目卡片 ID
+   */
+  async clearCancellation(cardId: string): Promise<void> {
+    await invoke("clear_cancellation", { cardId });
   },
 };
 
