@@ -823,6 +823,243 @@ fn clear_git_proxy() -> Result<(), String> {
     Ok(())
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NvmInfo {
+    pub installed: bool,
+    pub current_version: Option<String>,
+    pub installed_versions: Vec<String>,
+    pub available_versions: Vec<String>,
+}
+
+fn check_nvm_installed() -> bool {
+    let nvm_home = std::env::var("NVM_HOME").ok();
+    let nvm_symlink = std::env::var("NVM_SYMLINK").ok();
+    let nvm_dir = std::env::var("NVM_DIR").ok();
+
+    nvm_home.is_some() || nvm_dir.is_some() || nvm_symlink.is_some()
+}
+
+fn get_installed_node_versions() -> Vec<String> {
+    let mut versions = Vec::new();
+
+    let nvm_home = std::env::var("NVM_HOME")
+        .or_else(|_| std::env::var("NVM_DIR"))
+        .unwrap_or_else(|_| {
+            let home = std::env::var("USERPROFILE").unwrap_or_default();
+            format!("{}\\AppData\\Roaming\\nvm", home)
+        });
+
+    let nvm_path = PathBuf::from(&nvm_home);
+
+    if !nvm_path.exists() {
+        return versions;
+    }
+
+    if let Ok(entries) = fs::read_dir(&nvm_path) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                let name = path.file_name()
+                    .map(|n| n.to_string_lossy().to_string())
+                    .unwrap_or_default();
+
+                if name.starts_with('v') {
+                    let node_exe = path.join("node.exe");
+                    if node_exe.exists() {
+                        let version_without_v = name.trim_start_matches('v').to_string();
+                        versions.push(version_without_v);
+                    }
+                }
+            }
+        }
+    }
+
+    versions.sort_by(|a, b| {
+        let parse_version = |s: &str| {
+            s.split('.')
+                .filter_map(|p| p.parse::<u32>().ok())
+                .collect::<Vec<u32>>()
+        };
+        let va = parse_version(a);
+        let vb = parse_version(b);
+        vb.cmp(&va)
+    });
+
+    versions
+}
+
+fn get_current_node_version() -> Option<String> {
+    let output = Command::new("node")
+        .creation_flags(CREATE_NO_WINDOW)
+        .args(["--version"])
+        .output()
+        .ok()?;
+
+    if output.status.success() {
+        let version = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if version.starts_with('v') {
+            return Some(version.trim_start_matches('v').to_string());
+        }
+    }
+
+    None
+}
+
+#[tauri::command]
+fn get_nvm_info() -> Result<NvmInfo, String> {
+    let installed = check_nvm_installed();
+    let installed_versions = if installed {
+        get_installed_node_versions()
+    } else {
+        Vec::new()
+    };
+
+    let current_version = if installed {
+        get_current_node_version()
+    } else {
+        None
+    };
+
+    let available_versions = vec![
+        "22.0.0".to_string(),
+        "21.0.0".to_string(),
+        "20.0.0".to_string(),
+        "18.0.0".to_string(),
+        "16.0.0".to_string(),
+    ];
+
+    Ok(NvmInfo {
+        installed,
+        current_version,
+        installed_versions,
+        available_versions,
+    })
+}
+
+#[tauri::command]
+fn switch_node_version(version: String) -> Result<(), String> {
+    let nvm_home = std::env::var("NVM_HOME")
+        .or_else(|_| std::env::var("NVM_DIR"))
+        .unwrap_or_else(|_| {
+            let home = std::env::var("USERPROFILE").unwrap_or_default();
+            format!("{}\\AppData\\Roaming\\nvm", home)
+        });
+
+    let version_with_v = if version.starts_with('v') {
+        version.clone()
+    } else {
+        format!("v{}", version)
+    };
+
+    let version_path = PathBuf::from(&nvm_home).join(&version_with_v).join("node.exe");
+
+    if !version_path.exists() {
+        return Err(format!("Node.js v{} 未安装，请先安装该版本", version));
+    }
+
+    let output = Command::new("cmd")
+        .creation_flags(CREATE_NO_WINDOW)
+        .args(["/C", "nvm", "use", &version])
+        .output()
+        .map_err(|e| format!("执行 nvm use 命令失败: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let error_msg = if !stderr.is_empty() {
+            stderr.to_string()
+        } else if !stdout.is_empty() {
+            stdout.to_string()
+        } else {
+            format!("切换失败，退出码: {}", output.status)
+        };
+        return Err(format!("切换 Node.js v{} 失败: {}", version, error_msg));
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+fn install_node_version(version: String) -> Result<(), String> {
+    let nvm_home = std::env::var("NVM_HOME")
+        .or_else(|_| std::env::var("NVM_DIR"))
+        .unwrap_or_else(|_| {
+            let home = std::env::var("USERPROFILE").unwrap_or_default();
+            format!("{}\\AppData\\Roaming\\nvm", home)
+        });
+
+    let version_with_v = if version.starts_with('v') {
+        version.clone()
+    } else {
+        format!("v{}", version)
+    };
+
+    let version_path = PathBuf::from(&nvm_home).join(&version_with_v).join("node.exe");
+
+    if version_path.exists() {
+        let output = Command::new("cmd")
+            .creation_flags(CREATE_NO_WINDOW)
+            .args(["/C", "nvm", "use", &version])
+            .output()
+            .map_err(|e| format!("执行 nvm use 命令失败: {}", e))?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let error_msg = if !stderr.is_empty() {
+                stderr.to_string()
+            } else if !stdout.is_empty() {
+                stdout.to_string()
+            } else {
+                format!("切换失败，退出码: {}", output.status)
+            };
+            return Err(format!("切换 Node.js v{} 失败: {}", version, error_msg));
+        }
+        return Ok(());
+    }
+
+    let install_output = Command::new("cmd")
+        .creation_flags(CREATE_NO_WINDOW)
+        .args(["/C", "nvm", "install", &version])
+        .output()
+        .map_err(|e| format!("执行 nvm install 命令失败: {}", e))?;
+
+    if !install_output.status.success() {
+        let stderr = String::from_utf8_lossy(&install_output.stderr);
+        let stdout = String::from_utf8_lossy(&install_output.stdout);
+        let error_msg = if !stderr.is_empty() {
+            stderr.to_string()
+        } else if !stdout.is_empty() {
+            stdout.to_string()
+        } else {
+            format!("安装失败，退出码: {}", install_output.status)
+        };
+        return Err(format!("安装 Node.js v{} 失败: {}", version, error_msg));
+    }
+
+    let use_output = Command::new("cmd")
+        .creation_flags(CREATE_NO_WINDOW)
+        .args(["/C", "nvm", "use", &version])
+        .output()
+        .map_err(|e| format!("执行 nvm use 命令失败: {}", e))?;
+
+    if !use_output.status.success() {
+        let stderr = String::from_utf8_lossy(&use_output.stderr);
+        let stdout = String::from_utf8_lossy(&use_output.stdout);
+        let error_msg = if !stderr.is_empty() {
+            stderr.to_string()
+        } else if !stdout.is_empty() {
+            stdout.to_string()
+        } else {
+            format!("切换失败，退出码: {}", use_output.status)
+        };
+        return Err(format!("安装完成但切换 Node.js v{} 失败: {}", version, error_msg));
+    }
+
+    Ok(())
+}
+
 const AUTOSTART_REG_KEY: &str = r"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run";
 const AUTOSTART_APP_NAME: &str = "FileMover";
 
@@ -1159,6 +1396,19 @@ async fn clear_cancellation(
     Ok(())
 }
 
+#[tauri::command]
+fn open_hosts_file() -> Result<(), String> {
+    let hosts_path = r"C:\Windows\System32\drivers\etc\hosts";
+    
+    Command::new("cmd")
+        .creation_flags(CREATE_NO_WINDOW)
+        .args(["/C", "start", "", hosts_path])
+        .output()
+        .map_err(|e| format!("打开 hosts 文件失败: {}", e))?;
+    
+    Ok(())
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -1182,6 +1432,9 @@ fn main() {
             set_git_proxy,
             get_git_proxy,
             clear_git_proxy,
+            get_nvm_info,
+            switch_node_version,
+            install_node_version,
             get_autostart,
             set_autostart,
             get_tray_setting,
@@ -1193,7 +1446,8 @@ fn main() {
             stop_all_watches,
             get_watch_statuses,
             stop_operation,
-            clear_cancellation
+            clear_cancellation,
+            open_hosts_file
         ])
         .setup(|app| {
             let show_item = MenuItem::with_id(app, "show", "显示窗口", true, None::<&str>)?;

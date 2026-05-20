@@ -22,7 +22,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import NvmVersionManager from "./NvmVersionManager";
 import "./GitProxySettings.css";
+import "./NvmVersionManager.css";
 
 /**
  * GitProxySettings 组件 Props
@@ -147,25 +149,27 @@ export default function GitProxySettings({ initialExpanded = false }: GitProxySe
   };
 
   return (
-    <div className="git-proxy-settings" ref={containerRef}>
-      {/* 切换按钮 */}
-      <button
-        className="git-proxy-toggle-btn"
-        onClick={() => setIsExpanded(!isExpanded)}
-        title="Git 代理设置"
-      >
-        {/* 地球图标 SVG */}
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="2" y1="12" x2="22" y2="12"></line>
-          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-        </svg>
-        {/* 代理指示点（已设置代理时显示） */}
-        {currentProxy && <span className="proxy-indicator"></span>}
-      </button>
+    <div className="version-settings-wrapper">
+      <NvmVersionManager />
+      <div className="git-proxy-settings" ref={containerRef}>
+        {/* 切换按钮 */}
+        <button
+          className="git-proxy-toggle-btn"
+          onClick={() => setIsExpanded(!isExpanded)}
+          title="Git 代理设置"
+        >
+          {/* 地球图标 SVG */}
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          </svg>
+          {/* 代理指示点（已设置代理时显示） */}
+          {currentProxy && <span className="proxy-indicator"></span>}
+        </button>
 
-      {/* 下拉面板 */}
-      {isExpanded && (
+        {/* 下拉面板 */}
+        {isExpanded && (
         <div className="git-proxy-dropdown">
           <div className="git-proxy-header">
             <span>Git 代理设置</span>
@@ -226,6 +230,7 @@ export default function GitProxySettings({ initialExpanded = false }: GitProxySe
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }

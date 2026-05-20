@@ -2,6 +2,12 @@
   position: relative;
 }
 
+.version-settings-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .git-proxy-toggle-btn {
   width: 36px;
   height: 36px;
