@@ -21,6 +21,7 @@ export default function NvmVersionManager() {
   const [message, setMessage] = useState("");
   const [installingVersion, setInstallingVersion] = useState<string | null>(null);
   const [switchingVersion, setSwitchingVersion] = useState<string | null>(null);
+  const [isVersionsListExpanded, setIsVersionsListExpanded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -198,36 +199,41 @@ export default function NvmVersionManager() {
 
               {getAvailableToInstall().length > 0 && (
                 <div className="nvm-section">
-                  <div className="nvm-section-header">
+                  <div className="nvm-section-header collapsible" onClick={() => setIsVersionsListExpanded(!isVersionsListExpanded)}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <circle cx="12" cy="12" r="10"></circle>
                       <line x1="12" y1="16" x2="12" y2="12"></line>
                       <line x1="12" y1="8" x2="12.01" y2="8"></line>
                     </svg>
                     <span>可安装版本</span>
+                    <svg className={`collapse-arrow ${isVersionsListExpanded ? "expanded" : ""}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
                   </div>
-                  <div className="nvm-version-list">
-                    {getAvailableToInstall().map(version => (
-                      <button
-                        key={version}
-                        className="nvm-version-item available"
-                        onClick={() => handleInstallVersion(version)}
-                        disabled={installingVersion !== null}
-                      >
-                        <span className="nvm-version-number">v{version}</span>
-                        {installingVersion === version ? (
-                          <span className="nvm-installing">安装中...</span>
-                        ) : (
-                          <span className="nvm-install-icon">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <line x1="12" y1="5" x2="12" y2="19"></line>
-                              <polyline points="19 12 12 19 5 12"></polyline>
-                            </svg>
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
+                  {isVersionsListExpanded && (
+                    <div className="nvm-version-list">
+                      {getAvailableToInstall().map(version => (
+                        <button
+                          key={version}
+                          className="nvm-version-item available"
+                          onClick={() => handleInstallVersion(version)}
+                          disabled={installingVersion !== null}
+                        >
+                          <span className="nvm-version-number">v{version}</span>
+                          {installingVersion === version ? (
+                            <span className="nvm-installing">安装中...</span>
+                          ) : (
+                            <span className="nvm-install-icon">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <polyline points="19 12 12 19 5 12"></polyline>
+                              </svg>
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 

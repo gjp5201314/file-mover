@@ -447,3 +447,28 @@
   border: 1px solid rgba(244, 67, 54, 0.18);
   box-shadow: 0 2px 6px rgba(244, 67, 54, 0.08);
 }
+
+.nvm-section-header.collapsible {
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s;
+  border-radius: 6px;
+  margin: -4px -6px 10px;
+  padding: 4px 6px;
+}
+
+.nvm-section-header.collapsible:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.collapse-arrow {
+  margin-left: auto;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0.5;
+}
+
+.collapse-arrow.expanded {
+  transform: rotate(180deg);
+  opacity: 1;
+}
+

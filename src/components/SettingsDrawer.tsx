@@ -10,6 +10,7 @@ interface ChangelogEntry {
 }
 
 const changelog: ChangelogEntry[] = [
+  { version: "1.2.0", date: "2026-05-20", type: "新增", content: "Node.js 版本管理：支持查看、切换和安装 Node.js 版本" },
   { version: "1.2.0", date: "2026-05-20", type: "新增", content: "Hosts 文件管理：支持快速打开本地计算机 hosts 文件进行编辑" },
   { version: "1.2.0", date: "2026-05-18", type: "新增", content: "系统托盘功能：支持最小化到托盘后台运行，可通过托盘图标恢复窗口" },
   { version: "1.2.0", date: "2026-05-18", type: "重构", content: "通用确认弹窗组件：创建万能弹窗组件，替代原有的删除确认弹窗，支持多种场景复用" },
