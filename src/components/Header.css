@@ -3,6 +3,12 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
+  min-height: 48px;
+  gap: 0 64px;
+}
+
+.app-header .tabs-container {
+  flex: 1;
 }
 
 .header-actions {

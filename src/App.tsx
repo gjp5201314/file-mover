@@ -20,7 +20,7 @@
  * - 根据状态显示不同的模态框
  */
 
-import { Header, ProjectTabs, ProjectCard, ProjectSidebar, ConfirmModal, CommitModal, SettingsDrawer } from "./components";
+import { Header, ProjectCard, ProjectSidebar, ConfirmModal, CommitModal, SettingsDrawer } from "./components";
 import { ProjectProvider, useProject } from "./context/ProjectContext";
 import "./components/variables.css";
 import "./components/styles.css";
@@ -68,10 +68,6 @@ function AppContent() {
       {/* 顶部导航栏 */}
       <Header
         onOpenSettings={() => setShowSettingsDrawer(true)}
-      />
-
-      {/* 项目标签页 */}
-      <ProjectTabs
         projects={cards}
         activeTab={activeTab}
         onTabSelect={setActiveTab}

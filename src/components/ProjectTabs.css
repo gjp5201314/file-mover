@@ -1,14 +1,14 @@
 .tabs-container {
-  margin-bottom: 8px;
-  border-bottom: 2px solid var(--color-border-light);
   padding-bottom: 0;
+  display: flex;
+  align-items: flex-end;
 }
 
 .tabs-list {
+  border-bottom: 2px solid var(--color-border-light);
   display: flex;
   gap: 4px;
   flex-wrap: wrap;
-  align-items: flex-end;
 }
 
 .tab-item {
@@ -60,6 +60,7 @@
   border: 2px dashed var(--color-border-default);
   color: var(--color-text-muted);
   margin-left: 8px;
+  flex-shrink: 0;
 }
 
 .tab-item.add-tab:hover {

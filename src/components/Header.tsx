@@ -14,16 +14,27 @@
  */
 
 import GitProxySettings from "./GitProxySettings";
+import ProjectTabs from "./ProjectTabs";
+import type { ProjectCardData } from "../types";
 import "./Header.css";
 
 interface HeaderProps {
   onOpenSettings: () => void;
+  projects: ProjectCardData[];
+  activeTab: string | null;
+  onTabSelect: (id: string) => void;
+  onAddProject: () => void;
 }
 
-export default function Header({ onOpenSettings }: HeaderProps) {
+export default function Header({ onOpenSettings, projects, activeTab, onTabSelect, onAddProject }: HeaderProps) {
   return (
     <header className="app-header">
-      <h1 className="app-title">前端部署工具</h1>
+      <ProjectTabs
+        projects={projects}
+        activeTab={activeTab}
+        onTabSelect={onTabSelect}
+        onAddProject={onAddProject}
+      />
 
       <div className="header-actions">
         <GitProxySettings />

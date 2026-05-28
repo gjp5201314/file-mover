@@ -57,26 +57,21 @@ export default function ProjectTabs({ projects, activeTab, onTabSelect, onAddPro
   return (
     <div className="tabs-container">
       <div className="tabs-list">
-        {/* 项目标签列表 */}
         {projects.map((project) => (
           <button
             key={project.id}
             className={`tab-item ${activeTab === project.id ? "active" : ""} ${project.status}`}
             onClick={() => onTabSelect(project.id)}
           >
-            {/* 项目名称 */}
             <span className="tab-name">{project.name}</span>
-            {/* 状态指示点 */}
             <span className={`tab-status-dot ${project.status}`}></span>
           </button>
         ))}
-
-        {/* 添加项目按钮 */}
-        <button className="tab-item add-tab" onClick={onAddProject}>
-          <span className="add-icon">+</span>
-          <span>添加项目</span>
-        </button>
       </div>
+      <button className="tab-item add-tab" onClick={onAddProject}>
+        <span className="add-icon">+</span>
+        <span>添加项目</span>
+      </button>
     </div>
   );
 }

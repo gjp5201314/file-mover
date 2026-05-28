@@ -709,15 +709,8 @@ fn exe_config_path() -> Result<PathBuf, String> {
         })
 }
 
-fn app_data_config_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    app.path()
-        .app_data_dir()
-        .map(|dir| dir.join(CONFIG_FILE_NAME))
-        .map_err(|e| format!("获取应用数据目录失败: {}", e))
-}
-
 #[tauri::command]
-fn load_app_config(app: tauri::AppHandle) -> Result<Option<serde_json::Value>, String> {
+fn load_app_config() -> Result<Option<serde_json::Value>, String> {
     let config_path = exe_config_path()?;
 
     if config_path.exists() {
@@ -728,26 +721,11 @@ fn load_app_config(app: tauri::AppHandle) -> Result<Option<serde_json::Value>, S
         return Ok(Some(config));
     }
 
-    let app_data_path = app_data_config_path(&app)?;
-    if app_data_path.exists() {
-        let content = fs::read_to_string(&app_data_path)
-            .map_err(|e| format!("读取旧配置失败: {}", e))?;
-        let config = serde_json::from_str(&content)
-            .map_err(|e| format!("解析旧配置失败: {}", e))?;
-
-        if let Some(parent) = config_path.parent() {
-            fs::create_dir_all(parent).map_err(|e| format!("创建配置目录失败: {}", e))?;
-        }
-        fs::write(&config_path, &content).map_err(|e| format!("迁移配置失败: {}", e))?;
-
-        return Ok(Some(config));
-    }
-
     Ok(None)
 }
 
 #[tauri::command]
-fn save_app_config(_app: tauri::AppHandle, config: serde_json::Value) -> Result<(), String> {
+fn save_app_config(config: serde_json::Value) -> Result<(), String> {
     let config_path = exe_config_path()?;
     if let Some(parent) = config_path.parent() {
         fs::create_dir_all(parent).map_err(|e| format!("创建配置目录失败: {}", e))?;

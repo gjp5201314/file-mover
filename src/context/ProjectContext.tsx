@@ -425,6 +425,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    // 清除取消标志，确保可以重新执行
+    await projectService.clearCancellation(id);
+
     // 记录执行开始时间，用于冷却机制
     setLastExecutionTime((prev) => ({ ...prev, [id]: Date.now() }));
 
@@ -488,6 +491,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const stopCard = async (id: string) => {
     try {
       await projectService.stopOperation(id);
+      await projectService.clearCancellation(id);
       await updateCard(id, { status: "idle", message: "操作已停止", progress: 0 });
     } catch (err) {
       await updateCard(id, { status: "idle", message: "停止失败", progress: 0 });
@@ -550,9 +554,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   /**
    * 重置项目状态
-   * @description 恢复到初始状态
+   * @description 恢复到初始状态，清除取消标志以便重新执行
    */
   const resetCard = async (id: string) => {
+    await projectService.clearCancellation(id);
     await updateCard(id, { status: "idle", message: "", progress: 0 });
   };
 
