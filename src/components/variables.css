@@ -43,9 +43,9 @@
   --color-border-focus: #3b82f6;
 
   /* ===== 滚动条 (Scrollbar) ===== */
-  --color-scrollbar-track: #f1f1f1;
-  --color-scrollbar-thumb: #c1c1c1;
-  --color-scrollbar-thumb-hover: #a1a1a1;
+  --color-scrollbar-track: #f0f2f5;
+  --color-scrollbar-thumb: #d1d5db;
+  --color-scrollbar-thumb-hover: #9ca3af;
 
   /* ===== 阴影 (Shadow) ===== */
   --shadow-sm: rgba(0, 0, 0, 0.08);

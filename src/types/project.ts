@@ -36,6 +36,58 @@ export interface FileEntry {
 }
 
 /**
+ * 账号密码
+ * @interface AccountCredential
+ *
+ * 表示网站的管理账号密码
+ */
+export interface AccountCredential {
+  /** 账号ID */
+  id: string;
+  /** 账号名称/用途 */
+  label: string;
+  /** 用户名 */
+  username: string;
+  /** 密码 */
+  password: string;
+}
+
+/**
+ * 环境配置
+ * @interface Environment
+ *
+ * 表示单个部署环境（如 net、com）
+ */
+export interface Environment {
+  /** 环境名称（如 net、com） */
+  name: string;
+  /** 网站地址 */
+  websiteUrl: string;
+}
+
+/**
+ * 前端网站项目
+ * @interface WebsiteProject
+ *
+ * 包含单个前端网站项目的所有配置信息
+ * 每个网站可能有多个环境（net、com）
+ */
+export interface WebsiteProject {
+  /** 唯一标识符 */
+  id: string;
+  /** 项目显示名称 */
+  name: string;
+  /** 网站地址 */
+  websiteUrl: string;
+  /** Git 仓库地址 */
+  gitUrl: string;
+  /** 环境列表（至少包含 net 和 com 环境） */
+  environments: Environment[];
+  /** 账号密码列表 */
+  credentials: AccountCredential[];
+}
+
+/**
  * 项目卡片完整数据
  * @interface ProjectCardData
  *

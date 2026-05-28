@@ -23,6 +23,7 @@
 import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import NvmVersionManager from "./NvmVersionManager";
+import ProjectOverview from "./ProjectOverview";
 import "./GitProxySettings.css";
 import "./NvmVersionManager.css";
 
@@ -150,6 +151,7 @@ export default function GitProxySettings({ initialExpanded = false }: GitProxySe
 
   return (
     <div className="version-settings-wrapper">
+      <ProjectOverview />
       <NvmVersionManager />
       <div className="git-proxy-settings" ref={containerRef}>
         {/* 切换按钮 */}
@@ -173,7 +175,12 @@ export default function GitProxySettings({ initialExpanded = false }: GitProxySe
         <div className="git-proxy-dropdown">
           <div className="git-proxy-header">
             <span>Git 代理设置</span>
-            <button className="close-btn" onClick={() => setIsExpanded(false)}>x</button>
+            <button className="close-btn" onClick={() => setIsExpanded(false)}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
           </div>
 
           {/* 当前代理显示 */}

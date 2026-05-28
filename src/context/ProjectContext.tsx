@@ -117,9 +117,9 @@ interface ProjectContextValue {
   handleManualCommitCancel: () => void;
 
   // ========== 配置导入/导出 ==========
-  /** 导入配置 */
+  /** 导入配置（同时导入项目和网站项目） */
   importConfig: () => Promise<void>;
-  /** 导出配置 */
+  /** 导出配置（同时导出项目和网站项目） */
   exportConfig: () => Promise<void>;
 
   // ========== 自动监听 ==========
@@ -320,8 +320,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
    * @description 从后端加载保存的项目配置
    */
   const loadInitialData = async () => {
-    const loadedCards = await projectService.loadConfig();
-    setCards(loadedCards);
+    const { projects } = await projectService.loadConfig();
+    setCards(projects);
   };
 
   // ========== 项目 CRUD ==========
@@ -631,7 +631,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   // ========== 配置导入/导出 ==========
   /**
    * 导入配置
-   * @description 通过文件选择器导入 JSON 配置
+   * @description 通过文件选择器导入 JSON 配置（同时导入项目和网站项目）
    *
    * 流程：
    * 1. 创建隐藏的文件输入框
@@ -650,11 +650,15 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
       try {
         const text = await file.text();
-        const importedCards = projectService.parseImportConfig(text, cards.length);
-        const updatedCards = [...cards, ...importedCards];
+        const { projects: importedProjects, websiteProjects: importedWebsiteProjects } = projectService.parseImportConfig(text, cards.length);
+        const updatedCards = [...cards, ...importedProjects];
         setCards(updatedCards);
-        await projectService.saveConfig(updatedCards);
-        alert(`成功导入 ${importedCards.length} 个项目`);
+        await projectService.saveConfig(updatedCards, importedWebsiteProjects);
+        let message = `成功导入 ${importedProjects.length} 个部署项目`;
+        if (importedWebsiteProjects.length > 0) {
+          message += ` 和 ${importedWebsiteProjects.length} 个网站项目`;
+        }
+        alert(message);
       } catch (err) {
         alert(`导入失败: ${err}`);
       }
@@ -664,11 +668,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   /**
    * 导出配置
-   * @description 导出当前配置到 JSON 文件
+   * @description 导出当前配置到 JSON 文件（同时导出项目和网站项目）
    */
   const exportConfig = async () => {
     try {
-      await projectService.exportConfig(cards);
+      const { websiteProjects } = await projectService.loadConfig();
+      await projectService.exportConfig(cards, websiteProjects);
     } catch (err) {
       console.error("导出失败:", err);
       alert(`导出失败: ${err}`);

@@ -23,6 +23,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { save } from "@tauri-apps/plugin-dialog";
 import type { FileEntry, ProjectCardData } from "../types";
+import type { WebsiteProject } from "../types/project";
 
 /**
  * 原始文件条目格式
@@ -43,12 +44,14 @@ interface RawFileEntry {
  * @property updatedAt - 最后更新时间
  * @property exportedAt - 导出时间
  * @property projects - 项目列表
+ * @property websiteProjects - 网站项目列表
  */
 export interface AppConfig {
   version?: string;
   updatedAt?: string;
   exportedAt?: string;
   projects: ProjectCardData[];
+  websiteProjects?: WebsiteProject[];
 }
 
 /**
@@ -98,6 +101,22 @@ export interface ExportConfig {
     clearTargetAllEntries: Array<{ name: string; isDirectory: boolean }>;
     commitMode: "auto" | "manual" | "none";
   }>;
+  websiteProjects?: Array<{
+    id: string;
+    name: string;
+    websiteUrl: string;
+    gitUrl: string;
+    environments: Array<{
+      name: string;
+      websiteUrl: string;
+    }>;
+    credentials: Array<{
+      id: string;
+      label: string;
+      username: string;
+      password: string;
+    }>;
+  }>;
 }
 
 /**
@@ -115,34 +134,33 @@ export const projectService = {
    *    - clearTarget (boolean) -> clearTargetMode (enum)
    *    - 处理字符串格式的 entry（兼容旧数据）
    *
-   * @returns Promise<ProjectCardData[]> 项目列表
+   * @returns Promise<{ projects: ProjectCardData[], websiteProjects: WebsiteProject[] }> 项目配置
    *
    * 错误处理：
    * - 配置不存在或格式错误时返回空数组
    * - 捕获错误并记录，不抛出异常
    */
-  async loadConfig(): Promise<ProjectCardData[]> {
+  async loadConfig(): Promise<{ projects: ProjectCardData[]; websiteProjects: WebsiteProject[] }> {
     try {
       const config = await invoke<AppConfig | null>("load_app_config");
-      if (!config?.projects || !Array.isArray(config.projects)) {
-        return [];
+      if (!config) {
+        return { projects: [], websiteProjects: [] };
       }
       // 数据迁移：处理版本兼容性和类型转换
-      return config.projects.map((project: any) => ({
+      const projects = (config.projects || []).map((project: any) => ({
         ...project,
-        // 兼容旧版本：clearTarget 布尔值迁移为 clearTargetMode 枚举
-        // 旧版本 clearTarget=true 等同于 clearTargetMode="all"
         clearTargetMode: project.clearTargetMode || (project.clearTarget ? "all" : "none"),
         clearTargetFolders: project.clearTargetFolders || [],
-        // 兼容旧版本：字符串格式的 entry 转换为对象格式
         clearTargetAllEntries: (project.clearTargetAllEntries || []).map((e: RawFileEntry): FileEntry => ({
           name: typeof e === 'string' ? e : (e.name || String(e)),
           isDirectory: e.isDirectory ?? true
         })),
       }));
+      const websiteProjects: WebsiteProject[] = config.websiteProjects || [];
+      return { projects, websiteProjects };
     } catch (err) {
       console.error("加载配置失败:", err);
-      return [];
+      return { projects: [], websiteProjects: [] };
     }
   },
 
@@ -151,6 +169,7 @@ export const projectService = {
    * @description 将项目列表保存到后端存储
    *
    * @param projects - 要保存的项目列表
+   * @param websiteProjects - 要保存的网站项目列表（可选）
    * @returns Promise<void>
    *
    * 调用时机：
@@ -158,11 +177,29 @@ export const projectService = {
    * - 更新项目配置后
    * - 删除项目后
    */
-  async saveConfig(projects: ProjectCardData[]): Promise<void> {
+  async saveConfig(projects: ProjectCardData[], websiteProjects?: WebsiteProject[]): Promise<void> {
     const config: AppConfig = {
       version: "1.0",
       updatedAt: new Date().toISOString(),
       projects,
+      websiteProjects,
+    };
+    await invoke("save_app_config", { config });
+  },
+
+  /**
+   * 保存网站项目配置
+   * @description 将网站项目列表保存到后端存储
+   *
+   * @param websiteProjects - 要保存的网站项目列表
+   * @returns Promise<void>
+   */
+  async saveWebsiteProjects(websiteProjects: WebsiteProject[]): Promise<void> {
+    const config: AppConfig = {
+      version: "1.0",
+      updatedAt: new Date().toISOString(),
+      projects: [],
+      websiteProjects,
     };
     await invoke("save_app_config", { config });
   },
@@ -252,6 +289,7 @@ export const projectService = {
    * @description 将项目配置导出为 JSON 文件
    *
    * @param cards - 项目卡片列表
+   * @param websiteProjects - 网站项目列表（可选）
    * @returns Promise<void>
    *
    * 导出格式：
@@ -263,8 +301,9 @@ export const projectService = {
    * - 版本信息
    * - 导出时间
    * - 所有项目的配置（不含运行时状态）
+   * - 网站项目配置（如果提供）
    */
-  async exportConfig(cards: ProjectCardData[]): Promise<void> {
+  async exportConfig(cards: ProjectCardData[], websiteProjects?: WebsiteProject[]): Promise<void> {
     const config: ExportConfig = {
       version: "1.0",
       exportedAt: new Date().toISOString(),
@@ -278,6 +317,14 @@ export const projectService = {
         clearTargetFolders: card.clearTargetFolders,
         clearTargetAllEntries: card.clearTargetAllEntries.map((e: FileEntry) => ({ name: e.name, isDirectory: e.isDirectory })),
         commitMode: card.commitMode,
+      })),
+      websiteProjects: websiteProjects?.map(p => ({
+        id: p.id,
+        name: p.name,
+        websiteUrl: p.websiteUrl,
+        gitUrl: p.gitUrl,
+        environments: p.environments.map(e => ({ name: e.name, websiteUrl: e.websiteUrl })),
+        credentials: p.credentials.map(c => ({ id: c.id, label: c.label, username: c.username, password: c.password })),
       })),
     };
 
@@ -313,64 +360,96 @@ export const projectService = {
    * - 如果没有，生成 "项目 N" 格式的名称
    * - N = 现有项目数量 + 索引 + 1
    */
-  parseImportConfig(text: string, existingCardsLength: number): ProjectCardData[] {
-    let config: { projects?: ImportedProject[] };
+  parseImportConfig(text: string, existingCardsLength: number): { projects: ProjectCardData[]; websiteProjects: WebsiteProject[] } {
+    let config: { projects?: ImportedProject[]; websiteProjects?: any[] };
     try {
       config = JSON.parse(text);
     } catch (err) {
       throw new Error("配置文件格式无效：JSON 解析失败");
     }
 
-    if (!config.projects) {
-      throw new Error("配置文件格式无效：缺少 projects 字段");
-    }
-    
-    if (!Array.isArray(config.projects)) {
-      throw new Error("配置文件格式无效：projects 必须是数组");
-    }
-    
-    if (config.projects.length === 0) {
-      throw new Error("配置文件为空：没有项目可以导入");
+    if (!config.projects && !config.websiteProjects) {
+      throw new Error("配置文件格式无效：缺少 projects 或 websiteProjects 字段");
     }
 
-    return config.projects.map((project: ImportedProject, index: number) => {
-      if (!project.sourcePath || typeof project.sourcePath !== 'string') {
-        throw new Error(`项目 ${index + 1}：源路径无效`);
+    const projects: ProjectCardData[] = [];
+    const websiteProjects: WebsiteProject[] = [];
+
+    if (config.projects) {
+      if (!Array.isArray(config.projects)) {
+        throw new Error("配置文件格式无效：projects 必须是数组");
       }
-      
-      if (!project.targetPath || typeof project.targetPath !== 'string') {
-        throw new Error(`项目 ${index + 1}：目标路径无效`);
+
+      if (config.projects.length === 0 && (!config.websiteProjects || config.websiteProjects.length === 0)) {
+        throw new Error("配置文件为空：没有项目可以导入");
       }
-      
-      const name = project.name?.trim() || `项目 ${existingCardsLength + index + 1}`;
-      if (name.length > 100) {
-        throw new Error(`项目 ${index + 1}：名称过长（最大 100 个字符）`);
-      }
-      
-      const moveMode = project.moveMode === "cut" ? "cut" : "copy";
-      const clearTargetMode = project.clearTargetMode || (project.clearTarget ? "all" : "none");
-      const commitMode = project.commitMode || (project.autoCommit === false ? "none" : "auto");
-      
-      return {
-        id: generateId(),
-        name,
-        sourcePath: project.sourcePath,
-        targetPath: project.targetPath,
-        autoPull: project.autoPull ?? true,
-        moveMode,
-        clearTargetMode,
-        clearTargetFolders: Array.isArray(project.clearTargetFolders) ? project.clearTargetFolders : [],
-        clearTargetAllEntries: (project.clearTargetAllEntries || []).map((e: RawFileEntry): FileEntry => ({
-          name: typeof e === 'string' ? e : (e.name || String(e)),
-          isDirectory: e.isDirectory ?? true
-        })),
-        commitMode,
-        autoWatch: false,
-        status: "idle" as const,
-        message: "",
-        progress: 0,
-      };
-    });
+
+      projects.push(...config.projects.map((project: ImportedProject, index: number) => {
+        if (!project.sourcePath || typeof project.sourcePath !== 'string') {
+          throw new Error(`项目 ${index + 1}：源路径无效`);
+        }
+
+        if (!project.targetPath || typeof project.targetPath !== 'string') {
+          throw new Error(`项目 ${index + 1}：目标路径无效`);
+        }
+
+        const name = project.name?.trim() || `项目 ${existingCardsLength + index + 1}`;
+        if (name.length > 100) {
+          throw new Error(`项目 ${index + 1}：名称过长（最大 100 个字符）`);
+        }
+
+        const moveMode: "copy" | "cut" = project.moveMode === "cut" ? "cut" : "copy";
+        const clearTargetMode = project.clearTargetMode || (project.clearTarget ? "all" : "none");
+        const commitMode = project.commitMode || (project.autoCommit === false ? "none" : "auto");
+
+        return {
+          id: generateId(),
+          name,
+          sourcePath: project.sourcePath,
+          targetPath: project.targetPath,
+          autoPull: project.autoPull ?? true,
+          moveMode,
+          clearTargetMode,
+          clearTargetFolders: Array.isArray(project.clearTargetFolders) ? project.clearTargetFolders : [],
+          clearTargetAllEntries: (project.clearTargetAllEntries || []).map((e: RawFileEntry): FileEntry => ({
+            name: typeof e === 'string' ? e : (e.name || String(e)),
+            isDirectory: e.isDirectory ?? true
+          })),
+          commitMode,
+          autoWatch: false,
+          status: "idle" as const,
+          message: "",
+          progress: 0,
+        };
+      }));
+    }
+
+    if (config.websiteProjects && Array.isArray(config.websiteProjects)) {
+      websiteProjects.push(...config.websiteProjects.map((p: any, index: number) => {
+        if (!p.name || typeof p.name !== 'string') {
+          throw new Error(`网站项目 ${index + 1}：名称无效`);
+        }
+
+        return {
+          id: generateId(),
+          name: p.name,
+          websiteUrl: p.websiteUrl || "",
+          gitUrl: p.gitUrl || "",
+          environments: (p.environments || []).map((e: any) => ({
+            name: e.name || "net",
+            websiteUrl: e.websiteUrl || "",
+          })),
+          credentials: (p.credentials || []).map((c: any) => ({
+            id: generateId(),
+            label: c.label || "",
+            username: c.username || "",
+            password: c.password || "",
+          })),
+        };
+      }));
+    }
+
+    return { projects, websiteProjects };
   },
 
   // ========== 文件监听（Auto Watch） ==========

@@ -27,5 +27,6 @@ export { default as ConfirmModal } from "./ConfirmModal";
 export type { ConfirmModalProps, ConfirmButtonType } from "./ConfirmModal";
 export { default as CommitModal } from "./CommitModal";
 export { default as GitProxySettings } from "./GitProxySettings";
+export { default as ProjectOverview } from "./ProjectOverview";
 export { default as AutoStartSettings } from "./AutoStartSettings";
 export { default as SettingsDrawer } from "./SettingsDrawer";

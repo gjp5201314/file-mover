@@ -29,6 +29,24 @@
   animation: drawerSlideIn 0.25s ease-out;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
+}
+
+.settings-drawer::-webkit-scrollbar {
+  width: 6px;
+}
+
+.settings-drawer::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+}
+
+.settings-drawer::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.settings-drawer::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 @keyframes drawerSlideIn {

@@ -73,7 +73,12 @@ export default function AutoStartSettings({ initialExpanded = false }: AutoStart
         <div className="auto-start-dropdown">
           <div className="auto-start-header">
             <span>开机启动</span>
-            <button className="close-btn" onClick={() => setIsExpanded(false)}>x</button>
+            <button className="close-btn" onClick={() => setIsExpanded(false)}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
           </div>
 
           <div className="auto-start-content">
