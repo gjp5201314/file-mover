@@ -195,10 +195,11 @@ export const projectService = {
    * @returns Promise<void>
    */
   async saveWebsiteProjects(websiteProjects: WebsiteProject[]): Promise<void> {
+    const currentConfig = await this.loadConfig();
     const config: AppConfig = {
       version: "1.0",
       updatedAt: new Date().toISOString(),
-      projects: [],
+      projects: currentConfig.projects,
       websiteProjects,
     };
     await invoke("save_app_config", { config });
