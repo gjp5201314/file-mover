@@ -10,20 +10,25 @@ interface ChangelogEntry {
 }
 
 const changelog: ChangelogEntry[] = [
+  { version: "1.3.0", date: "2026-05-28", type: "新增", content: "网站项目管理：支持管理前端网站项目，快速访问 net/com 环境配置" },
+  { version: "1.3.0", date: "2026-05-28", type: "优化", content: "配置导入导出：支持同时导入导出网站项目配置" },
+  { version: "1.3.0", date: "2026-05-28", type: "重构", content: "页面布局：将标签页移入头部组件，统一布局结构" },
   { version: "1.2.0", date: "2026-05-20", type: "新增", content: "Node.js 版本管理：支持查看、切换和安装 Node.js 版本" },
   { version: "1.2.0", date: "2026-05-20", type: "新增", content: "Hosts 文件管理：支持快速打开本地计算机 hosts 文件进行编辑" },
+  { version: "1.2.0", date: "2026-05-18", type: "新增", content: "自动化监听功能：开启后监听打包目录文件变化，自动执行部署" },
+  { version: "1.2.0", date: "2026-05-18", type: "新增", content: "停止操作支持：支持手动停止正在进行的部署操作" },
   { version: "1.2.0", date: "2026-05-18", type: "新增", content: "系统托盘功能：支持最小化到托盘后台运行，可通过托盘图标恢复窗口" },
-  { version: "1.2.0", date: "2026-05-18", type: "重构", content: "通用确认弹窗组件：创建万能弹窗组件，替代原有的删除确认弹窗，支持多种场景复用" },
+  { version: "1.2.0", date: "2026-05-18", type: "重构", content: "通用弹窗组件：创建万能弹窗组件，支持多种确认场景复用" },
   { version: "1.2.0", date: "2026-05-18", type: "优化", content: "日志清除功能：区分文件和Git日志，各自独立清除，互不影响" },
-  { version: "1.1.0", date: "2026-05-18", type: "新增", content: "自动化监听功能：开启后监听打包目录文件变化，自动执行部署" },
   { version: "1.0.3", date: "2026-05-15", type: "修复", content: "全链路安全加固：路径验证、符号链接检测、Git 操作审计" },
   { version: "1.0.2", date: "2026-05-15", type: "新增", content: "开机自启：支持 Windows 注册表开机启动" },
+  { version: "1.0.2", date: "2026-05-15", type: "重构", content: "项目结构：重构项目结构并完善代码规范" },
   { version: "1.0.1", date: "2026-05-14", type: "新增", content: "Git 代理设置：支持配置 HTTP/HTTPS 代理" },
+  { version: "1.0.1", date: "2026-05-13", type: "优化", content: "UI 样式：调整窗口尺寸与UI样式，新增日志时间戳" },
   { version: "1.0.0", date: "2026-05-12", type: "新增", content: "项目配置管理：支持多项目配置、导入导出" },
   { version: "1.0.0", date: "2026-05-12", type: "新增", content: "文件部署：支持复制/移动文件到目标目录" },
   { version: "1.0.0", date: "2026-05-12", type: "新增", content: "Git 集成：支持自动/手动提交、自动推送" },
   { version: "1.0.0", date: "2026-05-12", type: "新增", content: "目标目录清空：支持不清空/全部清空/指定文件清空" },
-  { version: "1.0.0", date: "2026-05-12", type: "新增", content: "初始化项目" },
 ];
 
 interface SettingsDrawerProps {
