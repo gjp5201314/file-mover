@@ -10,6 +10,12 @@ interface ChangelogEntry {
 }
 
 const changelog: ChangelogEntry[] = [
+  { version: "1.4.0", date: "2026-06-01", type: "新增", content: "项目拖拽排序：支持拖拽调整项目列表顺序" },
+  { version: "1.4.0", date: "2026-06-01", type: "新增", content: "顶部吸顶栏：可配置的顶部吸顶导航栏，支持滚动毛玻璃效果" },
+  { version: "1.4.0", date: "2026-06-01", type: "优化", content: "项目标签页：支持自动溢出折叠与搜索下拉菜单" },
+  { version: "1.4.0", date: "2026-06-01", type: "优化", content: "页面体验：新增页面内边距调整、模态框Portal修复与滚动穿透阻断" },
+  { version: "1.4.0", date: "2026-06-01", type: "优化", content: "密码框：新增清除按钮，提升使用体验" },
+  { version: "1.3.0", date: "2026-05-29", type: "修复", content: "修复保存网站项目时丢失原有配置项目的问题" },
   { version: "1.3.0", date: "2026-05-28", type: "新增", content: "网站项目管理：支持管理前端网站项目，快速访问 net/com 环境配置" },
   { version: "1.3.0", date: "2026-05-28", type: "优化", content: "配置导入导出：支持同时导入导出网站项目配置" },
   { version: "1.3.0", date: "2026-05-28", type: "重构", content: "页面布局：将标签页移入头部组件，统一布局结构" },
@@ -214,7 +220,7 @@ export default function SettingsDrawer({ isOpen, onClose, onImport, onExport, ha
               <div className="switch-row">
                 <div className="switch-info">
                   <span className="switch-label">顶部吸顶效果</span>
-                  <span className="switch-desc">开启后，项目标签栏将始终固定在页面顶部，滚动时出现毛玻璃与阴影效果</span>
+                  <span className="switch-desc">开启后，项目标签栏将始终固定在页面顶部</span>
                 </div>
                 <label className="switch">
                   <input
