@@ -38,6 +38,8 @@
   flex-direction: column;
   z-index: 1001;
   overflow-y: auto;
+  /* 阻断滚动穿透：抽屉内部滚动不会传递到主页面 */
+  overscroll-behavior: contain;
 }
 
 .project-overview-drawer::-webkit-scrollbar {
@@ -114,6 +116,7 @@
 .project-overview-content {
   flex: 1;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 16px;
 }
 
@@ -144,16 +147,56 @@
   gap: 12px;
 }
 
+/* 优化拖拽时的动画，避免松手后的抽动 */
+.project-list [data-rfd-draggable-context] {
+  transition: none;
+}
+
+.project-list [data-rfd-draggable-context] * {
+  transition: none;
+}
+
 .project-item {
   background: var(--color-bg-white);
   border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 10px;
   overflow: hidden;
-  transition: all 0.2s;
+  transition: box-shadow 0.2s, opacity 0.2s;
+  position: relative;
 }
 
 .project-item:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.project-item.dragging {
+  opacity: 0.85;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  cursor: grabbing;
+  transition: box-shadow 0.2s;
+}
+
+.drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  cursor: grab;
+  color: var(--color-text-muted);
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.drag-handle:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-secondary);
+}
+
+.drag-handle:active {
+  cursor: grabbing;
 }
 
 .project-header {
@@ -163,12 +206,15 @@
   padding: 8px 14px;
   background: linear-gradient(145deg, #f8f9fa 0%, #e9ecef 100%);
   border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  gap: 8px;
 }
 
 .project-name {
   font-size: 14px;
   font-weight: 700;
   color: var(--color-text-primary);
+  flex: 1;
+  min-width: 0;
 }
 
 .project-actions {
@@ -471,6 +517,7 @@
 .project-edit-form {
   flex: 1;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 16px;
 }
 
@@ -661,7 +708,8 @@
   flex: 1;
 }
 
-.credential-item .input-with-clear:first-child .form-input.small {
+.credential-item .input-with-clear {
+  position: relative;
   flex: 0 0 140px;
   max-width: 140px;
 }
@@ -674,7 +722,20 @@
 }
 
 .password-field .form-input.small {
-  padding-right: 32px;
+  padding-right: 60px;
+}
+
+.password-field .clear-input-btn {
+  position: absolute;
+  right: 32px;
+  width: 14px;
+  height: 14px;
+  z-index: 2;
+}
+
+.password-field .clear-input-btn svg {
+  width: 7px;
+  height: 7px;
 }
 
 .password-field .toggle-password-btn {
@@ -690,6 +751,7 @@
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
+  z-index: 1;
 }
 
 .password-field .toggle-password-btn:hover {

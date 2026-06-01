@@ -1,14 +1,76 @@
+/* 哨兵元素：位于 header 上方，用于 IntersectionObserver 检测页面是否已滚动 */
+.header-sentinel {
+  height: 1px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+}
+
 .app-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
   min-height: 48px;
   gap: 0 64px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  /* 跨越 body 的左右 padding，让毛玻璃背景铺满 #root 可用宽度 */
+  margin: 0 -16px 8px;
+  padding: 8px 16px;
+  /* 毛玻璃背景 */
+  background: rgba(240, 242, 245, 0.72);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  backdrop-filter: saturate(180%) blur(12px);
+  /* 下边界与阴影默认透明，滚动后以过渡动画出现 */
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  border-bottom: 1px solid transparent;
+  transition: background 0.25s ease, box-shadow 0.25s ease,
+    border-color 0.25s ease, padding 0.25s ease, min-height 0.25s ease;
+}
+
+/* 滚动后的吸顶增强样式：背景加深、阴影、底部分割线 */
+.app-header.scrolled {
+  background: rgba(255, 255, 255, 0.85);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  backdrop-filter: saturate(180%) blur(16px);
+  box-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.18),
+    0 2px 4px -2px rgba(0, 0, 0, 0.08);
+  border-bottom-color: var(--color-border-light);
+  /* 滚动后略微压缩高度，获得更紧凑的视觉层次 */
+  padding-top: 6px;
+  padding-bottom: 4px;
+  min-height: 44px;
+}
+
+/* 不支持 backdrop-filter 的环境下使用不透明背景作为降级 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .app-header {
+    background: var(--color-bg-page);
+  }
+  .app-header.scrolled {
+    background: var(--color-bg-white);
+  }
+}
+
+/* 用户在设置中关闭吸顶效果时，重置为普通静态顶部栏 */
+.app-header.no-sticky,
+.app-header.no-sticky.scrolled {
+  position: relative;
+  top: auto;
+  z-index: 10;
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+  border-bottom-color: transparent;
+  min-height: 48px;
 }
 
 .app-header .tabs-container {
   flex: 1;
+  overflow: visible;
 }
 
 .header-actions {

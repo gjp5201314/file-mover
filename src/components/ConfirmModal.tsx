@@ -17,6 +17,7 @@
  */
 
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import "./ConfirmModal.css";
 
 /**
@@ -101,7 +102,7 @@ export default function ConfirmModal({
     }
   };
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={handleOverlayClick}>
       <div className="modal-content">
         <h3>{title}</h3>
@@ -115,6 +116,7 @@ export default function ConfirmModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

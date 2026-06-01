@@ -52,7 +52,7 @@
 
 body {
   min-height: 100vh;
-  padding: 8px 16px;
+  padding: 0 16px 16px;
 }
 
 #root {
@@ -63,7 +63,7 @@ body {
 
 .app-container {
   background: transparent;
-  min-height: calc(100vh - 32px);
+  min-height: calc(100vh - 16px);
   display: flex;
   flex-direction: column;
 }

@@ -42,6 +42,7 @@ interface SettingsDrawerProps {
 export default function SettingsDrawer({ isOpen, onClose, onImport, onExport, hasProjects }: SettingsDrawerProps) {
   const [autoStartEnabled, setAutoStartEnabled] = useState(false);
   const [trayEnabled, setTrayEnabled] = useState(false);
+  const [stickyHeaderEnabled, setStickyHeaderEnabled] = useState(true);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [showChangelog, setShowChangelog] = useState(false);
@@ -51,6 +52,7 @@ export default function SettingsDrawer({ isOpen, onClose, onImport, onExport, ha
     if (isOpen) {
       loadAutoStartStatus();
       loadTrayStatus();
+      loadStickyHeaderStatus();
     }
   }, [isOpen]);
 
@@ -81,6 +83,23 @@ export default function SettingsDrawer({ isOpen, onClose, onImport, onExport, ha
     } catch (err) {
       console.error("获取托盘状态失败:", err);
     }
+  };
+
+  /** 读取顶部吸顶设置（未设置过时默认开启） */
+  const loadStickyHeaderStatus = () => {
+    const v = localStorage.getItem("app.sticky-header.enabled");
+    setStickyHeaderEnabled(v === null ? true : v === "true");
+  };
+
+  const handleStickyHeaderToggle = (checked: boolean) => {
+    localStorage.setItem("app.sticky-header.enabled", String(checked));
+    setStickyHeaderEnabled(checked);
+    // 通知 Header 组件实时更新
+    window.dispatchEvent(
+      new CustomEvent("sticky-header-change", { detail: checked })
+    );
+    setMessage(checked ? "已开启顶部吸顶效果" : "已关闭顶部吸顶效果");
+    setTimeout(() => setMessage(""), 3000);
   };
 
   const handleToggle = async (checked: boolean) => {
@@ -185,6 +204,23 @@ export default function SettingsDrawer({ isOpen, onClose, onImport, onExport, ha
                     checked={trayEnabled}
                     onChange={(e) => handleTrayToggle(e.target.checked)}
                     disabled={loading}
+                  />
+                  <span className="slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div className="settings-item">
+              <div className="switch-row">
+                <div className="switch-info">
+                  <span className="switch-label">顶部吸顶效果</span>
+                  <span className="switch-desc">开启后，项目标签栏将始终固定在页面顶部，滚动时出现毛玻璃与阴影效果</span>
+                </div>
+                <label className="switch">
+                  <input
+                    type="checkbox"
+                    checked={stickyHeaderEnabled}
+                    onChange={(e) => handleStickyHeaderToggle(e.target.checked)}
                   />
                   <span className="slider"></span>
                 </label>
