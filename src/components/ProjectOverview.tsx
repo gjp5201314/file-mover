@@ -59,7 +59,6 @@ export default function ProjectOverview({ initialExpanded = false }: ProjectOver
     projectName: ""
   });
   const [copyFeedback, setCopyFeedback] = useState<{ [key: string]: boolean }>({});
-  const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
 
@@ -273,7 +272,6 @@ export default function ProjectOverview({ initialExpanded = false }: ProjectOver
   };
 
   const handleDragEnd = async (result: DropResult) => {
-    setIsDragging(false);
     const { source, destination } = result;
 
     // 如果没有目标位置或拖拽到原位，则不做任何操作
@@ -297,7 +295,6 @@ export default function ProjectOverview({ initialExpanded = false }: ProjectOver
   };
 
   const handleDragStart = () => {
-    setIsDragging(true);
   };
 
   return (
