@@ -20,11 +20,12 @@
  * - 根据状态显示不同的模态框
  */
 
-import { Header, ProjectCard, ProjectSidebar, ConfirmModal, CommitModal, SettingsDrawer } from "./components";
+import { Header, ProjectCard, ProjectSidebar, ConfirmModal, CommitModal, SettingsDrawer, AiAssistant, AiConfigDrawer } from "./components";
 import { ProjectProvider, useProject } from "./context/ProjectContext";
 import "./components/variables.css";
 import "./components/styles.css";
-import { useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { agentService } from "./services/agentService";
 
 /**
  * 应用内容组件
@@ -62,6 +63,26 @@ function AppContent() {
     watchStates,
   } = useProject();
   const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
+  // AI 配置抽屉（AiAssistant 的子级抽屉，从聊天面板 ⚙ 进入）
+  const [showAiConfigDrawer, setShowAiConfigDrawer] = useState(false);
+  const [aiConfigured, setAiConfigured] = useState(false);
+
+  /**
+   * 加载 AI 配置状态（仅需 hasApiKey）
+   */
+  const refreshAiConfig = useCallback(async () => {
+    try {
+      const cfg = await agentService.getConfig();
+      setAiConfigured(cfg.hasApiKey);
+    } catch (err) {
+      console.error("读取 AI 配置失败:", err);
+      setAiConfigured(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshAiConfig();
+  }, [refreshAiConfig]);
 
   return (
     <div className="app-container">
@@ -159,6 +180,20 @@ function AppContent() {
         onImport={importConfig}
         onExport={exportConfig}
         hasProjects={cards.length > 0}
+        onOpenAiConfig={() => setShowAiConfigDrawer(true)}
+      />
+
+      {/* AI 助手悬浮气泡 + 聊天面板 */}
+      <AiAssistant
+        configured={aiConfigured}
+        onOpenAiConfig={() => setShowAiConfigDrawer(true)}
+      />
+
+      {/* AI 助手配置抽屉（聊天面板的子级，入口在聊天面板右上角 ⚙） */}
+      <AiConfigDrawer
+        isOpen={showAiConfigDrawer}
+        onClose={() => setShowAiConfigDrawer(false)}
+        onConfigChange={refreshAiConfig}
       />
     </div>
   );

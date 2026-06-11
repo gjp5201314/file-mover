@@ -10,6 +10,11 @@ interface ChangelogEntry {
 }
 
 const changelog: ChangelogEntry[] = [
+  { version: "1.5.0", date: "2026-06-11", type: "新增", content: "AI 助手（Agent）：支持通过自然语言控制项目、查询天气、执行 Git 操作等；接入 DeepSeek LLM 并支持 Function Calling" },
+  { version: "1.5.0", date: "2026-06-11", type: "新增", content: "AI 设置：API Key 使用 Windows DPAPI 加密本地存储，可在设置面板中配置 / 测试 / 清除" },
+  { version: "1.5.0", date: "2026-06-11", type: "新增", content: "AI 聊天面板：右下角悬浮气泡 + 侧边聊天面板，支持多轮对话、工具调用步骤展示、历史记录持久化" },
+  { version: "1.5.1", date: "2026-06-11", type: "新增", content: "AI 服务方切换：内置 DeepSeek / 通义千问（Qwen） / 自定义 三个 provider，可一键切换并自动填充端点与模型" },
+  { version: "1.5.1", date: "2026-06-11", type: "新增", content: "Qwen 模型快捷选择：Qwen Turbo / Plus / Max / Long / Coder Plus 一键应用，并支持自定义其他模型" },
   { version: "1.4.0", date: "2026-06-01", type: "新增", content: "项目拖拽排序：支持拖拽调整项目列表顺序" },
   { version: "1.4.0", date: "2026-06-01", type: "新增", content: "顶部吸顶栏：可配置的顶部吸顶导航栏，支持滚动毛玻璃效果" },
   { version: "1.4.0", date: "2026-06-01", type: "优化", content: "项目标签页：支持自动溢出折叠与搜索下拉菜单" },
@@ -43,9 +48,11 @@ interface SettingsDrawerProps {
   onImport: () => void;
   onExport: () => void;
   hasProjects: boolean;
+  /** 打开 AI 助手配置抽屉（入口主要在 AI 聊天面板右上角 ⚙） */
+  onOpenAiConfig?: () => void;
 }
 
-export default function SettingsDrawer({ isOpen, onClose, onImport, onExport, hasProjects }: SettingsDrawerProps) {
+export default function SettingsDrawer({ isOpen, onClose, onImport, onExport, hasProjects, onOpenAiConfig }: SettingsDrawerProps) {
   const [autoStartEnabled, setAutoStartEnabled] = useState(false);
   const [trayEnabled, setTrayEnabled] = useState(false);
   const [stickyHeaderEnabled, setStickyHeaderEnabled] = useState(true);
@@ -144,7 +151,7 @@ export default function SettingsDrawer({ isOpen, onClose, onImport, onExport, ha
 
   const handleOpenHostsFile = async () => {
     if (hostsLoading) return;
-    
+
     setHostsLoading(true);
 
     try {
@@ -276,6 +283,28 @@ export default function SettingsDrawer({ isOpen, onClose, onImport, onExport, ha
                 {hostsLoading ? "正在打开..." : "打开 hosts 文件"}
               </button>
             </div>
+          </div>
+
+          <div className="settings-section">
+            <h3 className="section-title">AI 助手</h3>
+            <p className="ai-section-desc">
+              AI 助手配置已迁出到独立抽屉。打开右下角悬浮气泡，点右上角 <b>⚙</b> 即可配置服务方 / API Key / 模型。
+            </p>
+            {onOpenAiConfig && (
+              <button
+                className="settings-action-btn"
+                onClick={() => {
+                  onOpenAiConfig();
+                  onClose();
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+                打开 AI 助手配置
+              </button>
+            )}
           </div>
 
           <div className="settings-section">

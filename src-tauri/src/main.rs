@@ -1,5 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod agent;
+
 use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -68,7 +70,7 @@ fn chrono_lite_timestamp() -> String {
     format!("{:02}:{:02}:{:02}", hours, minutes, seconds)
 }
 
-fn is_path_safe(path: &Path) -> Result<(), String> {
+pub fn is_path_safe(path: &Path) -> Result<(), String> {
     let canonical = std::fs::canonicalize(path)
         .map_err(|e| format!("无法解析路径: {}", e))?;
     
@@ -1377,14 +1379,141 @@ async fn clear_cancellation(
 #[tauri::command]
 fn open_hosts_file() -> Result<(), String> {
     let hosts_path = r"C:\Windows\System32\drivers\etc\hosts";
-    
+
     Command::new("cmd")
         .creation_flags(CREATE_NO_WINDOW)
         .args(["/C", "start", "", hosts_path])
         .output()
         .map_err(|e| format!("打开 hosts 文件失败: {}", e))?;
-    
+
     Ok(())
+}
+
+// ========== AI Agent 命令 ==========
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct AgentSaveConfigInput {
+    api_key: String,
+    #[serde(default)]
+    base_url: Option<String>,
+    #[serde(default)]
+    model: Option<String>,
+}
+
+#[tauri::command]
+fn agent_get_config() -> Result<agent::AgentConfigView, String> {
+    Ok(agent::AgentConfigView::load())
+}
+
+#[tauri::command]
+fn agent_save_config(input: AgentSaveConfigInput) -> Result<agent::AgentConfigView, String> {
+    let key = input.api_key.trim();
+    if key.is_empty() {
+        return Err("API Key 不能为空".to_string());
+    }
+    agent::set_api_key(key)?;
+    if let Some(url) = input
+        .base_url
+        .as_ref()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+    {
+        agent::set_base_url(&url)?;
+    }
+    if let Some(m) = input
+        .model
+        .as_ref()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+    {
+        agent::set_model(&m)?;
+    }
+    Ok(agent::AgentConfigView::load())
+}
+
+#[tauri::command]
+fn agent_clear_config() -> Result<(), String> {
+    agent::clear_secrets()
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct AgentUpdateSettingsInput {
+    #[serde(default)]
+    base_url: Option<String>,
+    #[serde(default)]
+    model: Option<String>,
+}
+
+/// 仅更新 baseUrl / model（不修改 API Key）
+#[tauri::command]
+fn agent_update_settings(input: AgentUpdateSettingsInput) -> Result<agent::AgentConfigView, String> {
+    if let Some(url) = input
+        .base_url
+        .as_ref()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+    {
+        agent::set_base_url(&url)?;
+    }
+    if let Some(m) = input
+        .model
+        .as_ref()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+    {
+        agent::set_model(&m)?;
+    }
+    Ok(agent::AgentConfigView::load())
+}
+
+#[tauri::command]
+fn agent_chat(
+    app: tauri::AppHandle,
+    message: String,
+    history: Option<Vec<agent::AgentHistoryMessage>>,
+) -> Result<agent::AgentChatOutput, String> {
+    let input = agent::AgentChatInput {
+        message,
+        history: history.unwrap_or_default(),
+        base_url: None,
+        model: None,
+    };
+    agent::run_agent(app, input)
+}
+
+#[tauri::command]
+fn agent_list_tools() -> Result<Vec<serde_json::Value>, String> {
+    let defs = agent::all_tool_defs();
+    Ok(agent::tools_to_json_value(&defs))
+}
+
+#[tauri::command]
+fn agent_list_providers() -> Result<Vec<agent::AgentProvider>, String> {
+    Ok(agent::list_providers())
+}
+
+#[tauri::command]
+fn agent_match_provider(base_url: String) -> Result<String, String> {
+    Ok(agent::match_provider_id(&base_url))
+}
+
+#[tauri::command]
+fn agent_test_connection() -> Result<String, String> {
+    let api_key = agent::get_api_key()?.ok_or_else(|| "尚未配置 API Key".to_string())?;
+    let base_url = agent::get_base_url()
+        .ok()
+        .flatten()
+        .filter(|s| !s.trim().is_empty())
+        .ok_or_else(|| "尚未配置 Base URL，请先在【设置 → AI 助手】中选好服务方并保存".to_string())?;
+    let model = agent::get_model()
+        .ok()
+        .flatten()
+        .filter(|s| !s.trim().is_empty())
+        .ok_or_else(|| "尚未配置模型名，请先在【设置 → AI 助手】中选好模型并保存".to_string())?;
+    let reply = agent::llm::ping(&api_key, &base_url, &model)?;
+    Ok(reply)
 }
 
 fn main() {
@@ -1426,7 +1555,16 @@ fn main() {
             get_watch_statuses,
             stop_operation,
             clear_cancellation,
-            open_hosts_file
+            open_hosts_file,
+            agent_get_config,
+            agent_save_config,
+            agent_clear_config,
+            agent_update_settings,
+            agent_chat,
+            agent_list_tools,
+            agent_list_providers,
+            agent_match_provider,
+            agent_test_connection
         ])
         .setup(|app| {
             let show_item = MenuItem::with_id(app, "show", "显示窗口", true, None::<&str>)?;
