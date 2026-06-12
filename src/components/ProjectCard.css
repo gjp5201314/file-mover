@@ -1,0 +1,501 @@
+.project-card {
+  background: var(--color-bg-white);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px var(--shadow-sm);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.2s;
+  border: 2px solid transparent;
+}
+
+.project-card:hover {
+  box-shadow: 0 4px 12px var(--shadow-md);
+}
+
+.project-card.ready {
+  border-color: var(--status-ready);
+}
+
+.project-card.done {
+  border-color: var(--status-done);
+  background: #f0fdf4;
+}
+
+.project-card.error {
+  border-color: var(--status-error);
+  background: #fef2f2;
+}
+
+.project-card.copying,
+.project-card.committing {
+  border-color: var(--status-active);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.card-name-input {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  padding: 4px 6px;
+  border-radius: 6px;
+  color: var(--color-text-primary);
+}
+
+.card-name-input:hover {
+  background: var(--color-bg-hover);
+}
+
+.card-name-input:focus {
+  outline: none;
+  background: var(--color-primary-light);
+}
+
+.card-delete-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: var(--color-error-light);
+  color: var(--color-error);
+  border-radius: 6px;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.card-delete-btn:hover {
+  background: var(--color-error-border);
+}
+
+.card-delete-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.card-paths {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.path-section {
+  background: var(--color-bg-section);
+  border-radius: 6px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.section-header {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-bottom: 2px;
+}
+
+.section-hint {
+  font-size: 10px;
+  color: var(--color-text-muted);
+}
+
+.section-options {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--color-border-light);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.option-item {
+  display: flex;
+  align-items: flex-start;
+}
+
+.path-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.path-row label {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  user-select: none;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.checkbox-label:hover {
+  color: var(--color-primary);
+}
+
+.radio-group {
+  display: flex;
+  gap: 12px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  user-select: none;
+}
+
+.radio-label input[type="radio"] {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.radio-label:hover {
+  color: var(--color-primary);
+}
+
+.radio-group-inline {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.radio-group-label {
+  white-space: nowrap;
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 0;
+  display: inline;
+  vertical-align: middle;
+}
+
+.folder-selection {
+  margin-top: 6px;
+  padding: 10px;
+  background: var(--color-bg-hover);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.folder-selection-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.refresh-folders-btn {
+  padding: 3px 8px;
+  background: var(--color-bg-active);
+  border: 1px solid var(--color-border-default);
+  border-radius: 4px;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.refresh-folders-btn:hover {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.folder-list {
+  max-height: 120px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.folder-list-empty {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: 10px;
+}
+
+.folder-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  padding: 3px 6px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.folder-checkbox-label:hover {
+  background: var(--color-bg-active);
+  color: var(--color-text-secondary);
+}
+
+.folder-checkbox-label input[type="checkbox"] {
+  width: 13px;
+  height: 13px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.folder-checkbox-label.unselected {
+  color: var(--color-text-muted);
+}
+
+.folder-checkbox-label.unselected:hover {
+  background: var(--color-bg-active);
+  color: var(--color-text-tertiary);
+}
+
+.path-btn {
+  padding: 5px 12px;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-white);
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.path-btn:hover {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.path-btn.full-width {
+  width: 100%;
+}
+
+.path-display {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  padding: 6px 10px;
+  background: var(--color-bg-section);
+  border-radius: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: 1px solid var(--color-border-light);
+}
+
+.card-status {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 50px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 11px;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.status-badge.idle {
+  background: var(--color-bg-hover);
+  color: var(--status-idle);
+}
+
+.status-badge.copying {
+  background: var(--color-warning-light);
+  color: var(--color-warning-hover);
+}
+
+.status-badge.ready {
+  background: var(--color-success-light);
+  color: var(--color-success-hover);
+}
+
+.status-badge.committing {
+  background: var(--color-info-light);
+  color: var(--color-info-hover);
+}
+
+.status-badge.done {
+  background: var(--color-info-light);
+  color: var(--color-info-hover);
+}
+
+.status-badge.error {
+  background: var(--color-error-light);
+  color: var(--color-error);
+}
+
+.status-message {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.progress-bar-container {
+  height: 5px;
+  background: var(--color-bg-active);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-success));
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.action-buttons-row {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+}
+
+.action-buttons-row .action-btn {
+  flex: 1;
+}
+
+.action-btn {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.execute-btn {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+  color: white;
+}
+
+.execute-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.confirm-btn {
+  background: linear-gradient(135deg, var(--color-success), var(--color-success-hover));
+  color: white;
+}
+
+.confirm-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.reset-btn {
+  background: var(--color-bg-hover);
+  color: var(--color-text-tertiary);
+  border: 1px solid var(--color-border-default);
+}
+
+.reset-btn:hover:not(:disabled) {
+  background: var(--color-bg-active);
+}
+
+.stop-btn {
+  background: linear-gradient(135deg, var(--color-warning), var(--color-warning-hover));
+  color: white;
+  flex: 0 0 auto;
+  min-width: 70px;
+}
+
+.stop-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+}
+
+.cancel-btn {
+  background: var(--color-bg-hover);
+  color: var(--color-text-tertiary);
+  border: 1px solid var(--color-border-default);
+}
+
+.cancel-btn:hover {
+  background: var(--color-bg-active);
+}
+
+.danger-btn {
+  background: var(--color-error);
+  color: white;
+}
+
+.danger-btn:hover:not(:disabled) {
+  background: var(--color-error-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+/* 自动监听 Switch 样式 */
+.auto-watch-switch-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.auto-watch-switch-row .switch-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.auto-watch-status {
+  font-size: 11px;
+  color: var(--color-success-hover);
+  margin-top: 4px;
+  padding: 4px 8px;
+  background: var(--color-success-light);
+  border-radius: 4px;
+  text-align: center;
+}

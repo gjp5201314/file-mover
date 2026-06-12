@@ -1,0 +1,75 @@
+:root {
+  /* ===== 主体色 (Brand Colors) ===== */
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-light: #eff6ff;
+  --color-primary-dark: #1d4ed8;
+
+  /* ===== 功能色 (Functional Colors) ===== */
+  --color-success: #10b981;
+  --color-success-hover: #059669;
+  --color-success-light: #d1fae5;
+  --color-success-border: #a7f3d0;
+
+  --color-error: #dc2626;
+  --color-error-hover: #b91c1c;
+  --color-error-light: #fee2e2;
+  --color-error-border: #fecaca;
+
+  --color-warning: #f59e0b;
+  --color-warning-hover: #d97706;
+  --color-warning-light: #fef3c7;
+
+  --color-info: #3b82f6;
+  --color-info-hover: #2563eb;
+  --color-info-light: #dbeafe;
+
+  /* ===== 中性色 - 文字 (Neutral Colors - Text) ===== */
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #374151;
+  --color-text-tertiary: #6b7280;
+  --color-text-muted: #9ca3af;
+
+  /* ===== 中性色 - 背景 (Neutral Colors - Background) ===== */
+  --color-bg-page: #f0f2f5;
+  --color-bg-white: #ffffff;
+  --color-bg-section: #f9fafb;
+  --color-bg-hover: #f3f4f6;
+  --color-bg-active: #e5e7eb;
+
+  /* ===== 中性色 - 边框和分割线 (Neutral Colors - Border) ===== */
+  --color-border-default: #d1d5db;
+  --color-border-light: #e5e7eb;
+  --color-border-focus: #3b82f6;
+
+  /* ===== 滚动条 (Scrollbar) ===== */
+  --color-scrollbar-track: #f0f2f5;
+  --color-scrollbar-thumb: #d1d5db;
+  --color-scrollbar-thumb-hover: #9ca3af;
+
+  /* ===== 阴影 (Shadow) ===== */
+  --shadow-sm: rgba(0, 0, 0, 0.08);
+  --shadow-md: rgba(0, 0, 0, 0.12);
+  --shadow-lg: rgba(0, 0, 0, 0.15);
+  --shadow-xl: rgba(0, 0, 0, 0.2);
+
+  /* ===== 状态指示 (Status Indicators) ===== */
+  --status-idle: #6b7280;
+  --status-active: #f59e0b;
+  --status-ready: #10b981;
+  --status-done: #3b82f6;
+  --status-error: #ef4444;
+
+  /* ===== 日志面板 (Log Panel) ===== */
+  --color-log-bg: #1f2937;
+  --color-log-header: #374151;
+  --color-log-text: #f9fafb;
+  --color-log-output: #10b981;
+  --color-log-file: #60a5fa;
+  --color-log-btn: #4b5563;
+  --color-log-btn-hover: #6b7280;
+
+  /* ===== 覆盖层 (Overlay) ===== */
+  --color-overlay: rgba(0, 0, 0, 0.5);
+  --color-overlay-light: rgba(0, 0, 0, 0.15);
+}

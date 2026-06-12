@@ -1,0 +1,100 @@
+.project-sidebar {
+  width: 320px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sidebar-section {
+  background: var(--color-bg-white);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--color-log-header);
+  color: var(--color-log-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sidebar-clear-btn {
+  padding: 3px 10px;
+  background: var(--color-log-btn);
+  border: none;
+  border-radius: 4px;
+  color: var(--color-border-default);
+  cursor: pointer;
+  font-size: 11px;
+  transition: background 0.2s;
+}
+
+.sidebar-clear-btn:hover {
+  background: var(--color-log-btn-hover);
+}
+
+.sidebar-content {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+  max-height: 300px;
+}
+
+.sidebar-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.log-content {
+  background: var(--color-log-bg);
+}
+
+.log-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.log-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.log-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.log-output {
+  margin: 0;
+  color: var(--color-log-output);
+  font-family: "Consolas", monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.file-log-output {
+  color: var(--color-log-file);
+}
+
+.sidebar-empty {
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  text-align: center;
+  padding: 16px;
+}

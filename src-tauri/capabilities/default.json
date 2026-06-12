@@ -1,0 +1,41 @@
+{
+  "$schema": "https://schemas.tauri.app/v2/capabilities/schema.json",
+  "identifier": "default",
+  "description": "Default capabilities for the app",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "dialog:default",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "shell:allow-open",
+    {
+      "identifier": "fs:allow-read",
+      "allow": [
+        {
+          "path": "$APPDATA/**/*"
+        },
+        {
+          "path": "$EXE/**/*"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-write",
+      "allow": [
+        {
+          "path": "$APPDATA/**/*"
+        },
+        {
+          "path": "$EXE/**/*"
+        }
+      ]
+    },
+    "fs:allow-exists",
+    "fs:allow-mkdir",
+    "fs:allow-remove",
+    "fs:allow-rename",
+    "fs:allow-copy-file",
+    "fs:allow-read-dir"
+  ]
+}
