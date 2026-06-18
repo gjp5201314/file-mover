@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "clean:cache": "node -e \"require('node:fs').rmSync('.vite-cache',{recursive:true,force:true});require('node:fs').rmSync('.tsbuildinfo',{force:true})\"",
+    "clean:rust": "cd src-tauri && cargo clean"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",

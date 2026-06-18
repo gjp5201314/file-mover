@@ -1,0 +1,16 @@
+# Cargo 构建配置 - 优化 Windows 编译与链接速度
+
+# 终端输出
+[term]
+color = "auto"
+
+# Windows MSVC 目标专属配置:使用 rust-lld 链接器
+# rust-lld 是 LLVM 自带链接器,比 MSVC link.exe 链接速度快 2-5x
+# Rust 官方工具链自带,无需额外安装
+# 如遇链接错误可注释掉本段退回默认 link.exe
+[target.x86_64-pc-windows-msvc]
+linker = "rust-lld.exe"
+# 备选:使用 lld-link(LLVM 发行版)
+# linker = "lld-link.exe"
+# 备选:退回 MSVC 链接器
+# linker = "link.exe"

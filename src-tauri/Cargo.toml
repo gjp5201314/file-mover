@@ -16,3 +16,29 @@ tauri-plugin-shell = "2.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 notify = "7"
+
+# 编译性能优化配置
+# 1. 增加代码生成单元数:codegen-units 越多,单 crate 编译并行度越高,速度越快
+#    代价是运行时性能略降(通常 < 5%),对 GUI 工具影响极小
+# 2. 关闭全量 LTO:LTO 链接时优化极慢(尤其是大项目),thin LTO 平衡速度与体积
+# 3. opt-level = 3:保持运行性能
+# 4. strip = true:剥离符号表,减小最终体积
+# 5. panic = "abort":移除 unwind 表,减小编译与体积
+[profile.release]
+codegen-units = 16
+lto = "thin"
+opt-level = 3
+strip = true
+panic = "abort"
+incremental = true
+
+# Dev 模式也启用增量编译
+[profile.dev]
+codegen-units = 256
+incremental = true
+
+# CI/打包专用:体积优先时切换
+# [profile.release-package]
+# inherits = "release"
+# lto = "fat"
+# codegen-units = 1
