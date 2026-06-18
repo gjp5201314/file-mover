@@ -358,24 +358,3 @@
   border-color: #f56c6c;
   color: #f56c6c;
 }
-
-/* ==================== 提示消息 ==================== */
-.ai-config-message {
-  padding: 8px 12px;
-  border-radius: 5px;
-  font-size: 12px;
-  line-height: 1.5;
-  word-break: break-word;
-}
-
-.ai-config-message.success {
-  background: rgba(103, 194, 58, 0.1);
-  color: #67c23a;
-  border: 1px solid rgba(103, 194, 58, 0.3);
-}
-
-.ai-config-message.error {
-  background: rgba(245, 108, 108, 0.1);
-  color: #f56c6c;
-  border: 1px solid rgba(245, 108, 108, 0.3);
-}

@@ -1,0 +1,116 @@
+/* ==================== 消息提示 (Message / Toast) ==================== */
+/* 挂在 document.body 顶层，z-index 高于所有抽屉（抽屉 z-index = 1000） */
+.app-message-container {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  /* 容器本身不接收鼠标事件，仅内部消息可点 */
+}
+
+.app-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 240px;
+  max-width: 480px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: var(--color-bg-white);
+  color: var(--color-text-secondary);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--color-border-light);
+  font-size: 14px;
+  line-height: 1.4;
+  pointer-events: auto;
+  cursor: pointer;
+  /* 默认（未进入）状态：透明 + 上移 */
+  opacity: 0;
+  transform: translateY(-12px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.app-message-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.app-message-leaving {
+  opacity: 0;
+  transform: translateY(-12px);
+}
+
+.app-message:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.16), 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.app-message-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.app-message-content {
+  flex: 1;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+/* 各类型配色（与项目 variables.css 保持一致） */
+.app-message-success {
+  border-color: var(--color-success-border);
+}
+.app-message-success .app-message-icon {
+  background: var(--color-success);
+}
+
+.app-message-error {
+  border-color: var(--color-error-border);
+}
+.app-message-error .app-message-icon {
+  background: var(--color-error);
+}
+
+.app-message-warning {
+  border-color: #fcd34d;
+}
+.app-message-warning .app-message-icon {
+  background: var(--color-warning);
+}
+
+.app-message-info {
+  border-color: var(--color-info-light);
+}
+.app-message-info .app-message-icon {
+  background: var(--color-info);
+}
+
+.app-message-loading {
+  border-color: var(--color-primary-light);
+}
+.app-message-loading .app-message-icon {
+  background: var(--color-primary);
+}
+
+.app-message-loading .app-message-spin {
+  animation: app-message-spin 0.9s linear infinite;
+}
+
+@keyframes app-message-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

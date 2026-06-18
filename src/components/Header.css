@@ -65,7 +65,11 @@
   backdrop-filter: none;
   box-shadow: none;
   border-bottom-color: transparent;
+  padding-top: 8px;
+  padding-bottom: 8px;
   min-height: 48px;
+  /* 关闭吸顶后不参与滚动压缩动画，避免两种状态下高度不一致 */
+  transition: none;
 }
 
 .app-header .tabs-container {

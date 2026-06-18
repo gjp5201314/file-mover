@@ -165,23 +165,3 @@ input:disabled + .slider {
   color: var(--color-text-tertiary);
   line-height: 1.4;
 }
-
-.auto-start-message {
-  margin-top: 10px;
-  padding: 8px 10px;
-  border-radius: 6px;
-  font-size: 12px;
-  text-align: center;
-}
-
-.auto-start-message.success {
-  background: var(--color-success-light);
-  color: var(--color-success-hover);
-  border: 1px solid var(--color-success-border);
-}
-
-.auto-start-message.error {
-  background: var(--color-error-light);
-  color: var(--color-error);
-  border: 1px solid var(--color-error-border);
-}

@@ -73,15 +73,18 @@ export default function Header({ onOpenSettings, projects, activeTab, onTabSelec
     return () => observer.disconnect();
   }, []);
 
-  // 同时监听内部滚动容器（.project-main）的滚动，
+  // 同时监听主内容区（.project-main）的滚动，
   // 以在内容区滚动时也能呈现吸顶视觉反馈。
+  // 仅处理 .project-main 内部的滚动事件，避免抽屉、弹窗等
+  // 其他独立滚动容器影响 header 状态。
   useEffect(() => {
     const handleInnerScroll = (e: Event) => {
-      const target = e.target as HTMLElement;
-      if (target && typeof target.scrollTop === "number") {
-        if (target.scrollTop > 4) setScrolled(true);
-        else if (window.scrollY <= 0) setScrolled(false);
-      }
+      const target = e.target as HTMLElement | Document;
+      if (!(target instanceof HTMLElement)) return;
+      // 非 .project-main 区域的滚动（抽屉、弹窗、其它可滚动容器）一律忽略
+      if (!target.closest(".project-main")) return;
+      if (target.scrollTop > 4) setScrolled(true);
+      else if (window.scrollY <= 0) setScrolled(false);
     };
 
     document.addEventListener("scroll", handleInnerScroll, { capture: true, passive: true });

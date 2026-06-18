@@ -200,23 +200,3 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
-
-.proxy-message {
-  margin-top: 10px;
-  padding: 8px 10px;
-  border-radius: 6px;
-  font-size: 12px;
-  text-align: center;
-}
-
-.proxy-message.success {
-  background: var(--color-success-light);
-  color: var(--color-success-hover);
-  border: 1px solid var(--color-success-border);
-}
-
-.proxy-message.error {
-  background: var(--color-error-light);
-  color: var(--color-error);
-  border: 1px solid var(--color-error-border);
-}

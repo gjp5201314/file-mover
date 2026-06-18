@@ -40,6 +40,7 @@ pub struct ToolFunction {
 
 /// 工具调用请求（来自 LLM）
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 pub struct ToolCall {
     pub id: String,
     #[serde(rename = "type")]

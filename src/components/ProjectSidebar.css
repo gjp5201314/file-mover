@@ -4,6 +4,8 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .sidebar-section {
@@ -13,6 +15,8 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  flex: 1;
+  min-height: 0;
 }
 
 .sidebar-header {
@@ -45,7 +49,7 @@
   flex: 1;
   padding: 12px;
   overflow-y: auto;
-  max-height: 300px;
+  min-height: 0;
 }
 
 .sidebar-content::-webkit-scrollbar {

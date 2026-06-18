@@ -24,6 +24,7 @@ import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import NvmVersionManager from "./NvmVersionManager";
 import ProjectOverview from "./ProjectOverview";
+import { message } from "./messageApi";
 import "./GitProxySettings.css";
 import "./NvmVersionManager.css";
 
@@ -50,8 +51,6 @@ export default function GitProxySettings({ initialExpanded = false }: GitProxySe
   const [currentProxy, setCurrentProxy] = useState<string | null>(null);
   // 加载状态
   const [loading, setLoading] = useState(false);
-  // 消息提示
-  const [message, setMessage] = useState("");
   // 容器引用
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -97,33 +96,26 @@ export default function GitProxySettings({ initialExpanded = false }: GitProxySe
   const handleSetProxy = async () => {
     // 验证输入
     if (!port.trim()) {
-      setMessage("请输入端口号");
-      setTimeout(() => setMessage(""), 3000);
+      message.error("请输入端口号");
       return;
     }
 
     const portNum = parseInt(port, 10);
     if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
-      setMessage("端口号无效 (1-65535)");
-      setTimeout(() => setMessage(""), 3000);
+      message.error("端口号无效 (1-65535)");
       return;
     }
 
     setLoading(true);
-    setMessage("");
 
     try {
       // 调用后端设置代理
       await invoke("set_git_proxy", { port: portNum });
-      setMessage(`代理已设置到端口 ${port}`);
+      message.success(`代理已设置到端口 ${port}`);
       setCurrentProxy(`http://127.0.0.1:${port}`);
       setPort("");
-      // 3 秒后自动清除消息
-      setTimeout(() => setMessage(""), 3000);
     } catch (err) {
-      setMessage(`设置失败: ${err}`);
-      // 5 秒后自动清除错误消息
-      setTimeout(() => setMessage(""), 5000);
+      message.error(`设置失败: ${err}`);
     } finally {
       setLoading(false);
     }
@@ -134,16 +126,13 @@ export default function GitProxySettings({ initialExpanded = false }: GitProxySe
    */
   const handleClearProxy = async () => {
     setLoading(true);
-    setMessage("");
 
     try {
       await invoke("clear_git_proxy");
-      setMessage("代理已清除");
+      message.success("代理已清除");
       setCurrentProxy(null);
-      setTimeout(() => setMessage(""), 3000);
     } catch (err) {
-      setMessage(`清除失败: ${err}`);
-      setTimeout(() => setMessage(""), 5000);
+      message.error(`清除失败: ${err}`);
     } finally {
       setLoading(false);
     }
@@ -227,13 +216,6 @@ export default function GitProxySettings({ initialExpanded = false }: GitProxySe
             >
               清除代理
             </button>
-          )}
-
-          {/* 消息提示 */}
-          {message && (
-            <div className={`proxy-message ${message.includes("失败") ? "error" : "success"}`}>
-              {message}
-            </div>
           )}
         </div>
       )}

@@ -28,3 +28,6 @@ export { default as AutoStartSettings } from "./AutoStartSettings";
 export { default as SettingsDrawer } from "./SettingsDrawer";
 export { default as AiAssistant } from "./AiAssistant";
 export { default as AiConfigDrawer } from "./AiConfigDrawer";
+export { default as Message } from "./Message";
+export { message } from "./messageApi";
+export type { MessageTypeValue, MessageItem, MessageReturn } from "./messageApi";

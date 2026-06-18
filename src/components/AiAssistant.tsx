@@ -134,6 +134,34 @@ export default function AiAssistant({ configured, onOpenAiConfig, onOpenSettings
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [config, setConfig] = useState<AgentConfigView | null>(null);
+  // 悬浮气泡总开关（设置 → AI 助手 → 显示悬浮气泡）
+  const [enabled, setEnabled] = useState<boolean>(() => {
+    const v = localStorage.getItem("app.ai-bubble.enabled");
+    return v === null ? true : v === "true";
+  });
+
+  // 同步设置抽屉中的开关变化（含跨标签页）
+  useEffect(() => {
+    const handleChange = (e: Event) => {
+      const detail = (e as CustomEvent<boolean>).detail;
+      setEnabled(!!detail);
+      // 关闭时同步收起面板，避免下次开启时仍处于展开状态
+      if (detail === false) setOpen(false);
+    };
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "app.ai-bubble.enabled") {
+        const next = e.newValue === null ? true : e.newValue === "true";
+        setEnabled(next);
+        if (!next) setOpen(false);
+      }
+    };
+    window.addEventListener("ai-bubble-change", handleChange);
+    window.addEventListener("storage", handleStorage);
+    return () => {
+      window.removeEventListener("ai-bubble-change", handleChange);
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, []);
 
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
@@ -294,6 +322,9 @@ export default function AiAssistant({ configured, onOpenAiConfig, onOpenSettings
       sendMessage();
     }
   };
+
+  // 总开关关闭：不渲染气泡与聊天面板
+  if (!enabled) return null;
 
   return (
     <>

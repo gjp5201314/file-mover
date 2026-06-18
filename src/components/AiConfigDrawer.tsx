@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { agentService } from "../services/agentService";
 import type { AgentProvider } from "../types/agent";
+import { message } from "./messageApi";
 import "./AiConfigDrawer.css";
 
 interface AiConfigDrawerProps {
@@ -38,8 +39,6 @@ export default function AiConfigDrawer({ isOpen, onClose, onConfigChange }: AiCo
   // ===== 异步状态 =====
   const [aiSaving, setAiSaving] = useState(false);
   const [aiTesting, setAiTesting] = useState(false);
-  const [aiMessage, setAiMessage] = useState("");
-  const [aiMessageType, setAiMessageType] = useState<"success" | "error" | "">("");
 
   // ===== 打开抽屉时加载配置 =====
   useEffect(() => {
@@ -114,18 +113,13 @@ export default function AiConfigDrawer({ isOpen, onClose, onConfigChange }: AiCo
   };
 
   const showAiMsg = (text: string, type: "success" | "error") => {
-    setAiMessage(text);
-    setAiMessageType(type);
-    setTimeout(() => {
-      setAiMessage("");
-      setAiMessageType("");
-    }, 4000);
+    if (type === "error") message.error(text);
+    else message.success(text);
   };
 
   // ===== 保存 =====
   const handleSaveAiConfig = async () => {
     setAiSaving(true);
-    setAiMessage("");
     try {
       const trimmedKey = aiApiKey.trim();
       const { baseUrl, model } = getEffectiveConfig();
@@ -174,7 +168,6 @@ export default function AiConfigDrawer({ isOpen, onClose, onConfigChange }: AiCo
       return;
     }
     setAiTesting(true);
-    setAiMessage("");
     try {
       const reply = await agentService.testConnection();
       showAiMsg(
@@ -402,10 +395,6 @@ export default function AiConfigDrawer({ isOpen, onClose, onConfigChange }: AiCo
               清除
             </button>
           </div>
-
-          {aiMessage && (
-            <div className={`ai-config-message ${aiMessageType}`}>{aiMessage}</div>
-          )}
         </div>
       </div>
     </div>

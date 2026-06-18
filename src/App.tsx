@@ -22,6 +22,7 @@
 
 import { Header, ProjectCard, ProjectSidebar, ConfirmModal, CommitModal, SettingsDrawer, AiAssistant, AiConfigDrawer } from "./components";
 import { ProjectProvider, useProject } from "./context/ProjectContext";
+import Message from "./components/Message";
 import "./components/variables.css";
 import "./components/styles.css";
 import { useEffect, useState, useCallback } from "react";
@@ -195,6 +196,9 @@ function AppContent() {
         onClose={() => setShowAiConfigDrawer(false)}
         onConfigChange={refreshAiConfig}
       />
+
+      {/* 全局消息提示（Toast，挂一次即可，portal 到 body） */}
+      <Message />
     </div>
   );
 }

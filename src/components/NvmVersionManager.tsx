@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { message } from "./messageApi";
 import "./NvmVersionManager.css";
 
 interface NvmInfo {
@@ -18,7 +19,6 @@ export default function NvmVersionManager() {
   });
   const [isExpanded, setIsExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
   const [installingVersion, setInstallingVersion] = useState<string | null>(null);
   const [switchingVersion, setSwitchingVersion] = useState<string | null>(null);
   const [isVersionsListExpanded, setIsVersionsListExpanded] = useState(false);
@@ -63,19 +63,16 @@ export default function NvmVersionManager() {
     if (version === nvmInfo.currentVersion) return;
 
     setSwitchingVersion(version);
-    setMessage("");
 
     try {
       await invoke("switch_node_version", { version });
-      setMessage(`已切换到 Node.js v${version}`);
+      message.success(`已切换到 Node.js v${version}`);
       setNvmInfo(prev => ({
         ...prev,
         currentVersion: version
       }));
-      setTimeout(() => setMessage(""), 3000);
     } catch (err) {
-      setMessage(`切换失败: ${err}`);
-      setTimeout(() => setMessage(""), 5000);
+      message.error(`切换失败: ${err}`);
     } finally {
       setSwitchingVersion(null);
     }
@@ -88,11 +85,10 @@ export default function NvmVersionManager() {
     }
 
     setInstallingVersion(version);
-    setMessage("");
 
     try {
       await invoke("install_node_version", { version });
-      setMessage(`已安装并切换到 Node.js v${version}`);
+      message.success(`已安装并切换到 Node.js v${version}`);
       setNvmInfo(prev => ({
         ...prev,
         installedVersions: prev.installedVersions.includes(version)
@@ -100,10 +96,8 @@ export default function NvmVersionManager() {
           : [...prev.installedVersions, version],
         currentVersion: version
       }));
-      setTimeout(() => setMessage(""), 3000);
     } catch (err) {
-      setMessage(`安装失败: ${err}`);
-      setTimeout(() => setMessage(""), 5000);
+      message.error(`安装失败: ${err}`);
     } finally {
       setInstallingVersion(null);
     }
@@ -250,12 +244,6 @@ export default function NvmVersionManager() {
                 刷新版本列表
               </button>
             </>
-          )}
-
-          {message && (
-            <div className={`nvm-message ${message.includes("失败") ? "error" : "success"}`}>
-              {message}
-            </div>
           )}
         </div>
       )}

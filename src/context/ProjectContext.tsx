@@ -26,6 +26,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import type { ProjectCardData } from "../types";
 import { projectService } from "../services/projectService";
+import { message } from "../components/messageApi";
 import { useFileOperationEvents, CopyProgress, GitOutput, FileOperationLog, WatchTrigger } from "../hooks/useFileOperationEvents";
 
 /**
@@ -243,25 +244,25 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         )
       );
 
-      // 追加文件操作日志
+      // 追加文件操作日志（最新日志显示在最上方）
       // 格式：[时间戳] [当前/总数] 文件名
       setProjectLogs((prev) => ({
         ...prev,
         [cardId]: {
           ...prev[cardId],
-          fileOutput: (prev[cardId]?.fileOutput || "") + `[${formatTimestamp()}] [${current}/${total}] ${currentFile}\n`,
+          fileOutput: `[${formatTimestamp()}] [${current}/${total}] ${currentFile}\n` + (prev[cardId]?.fileOutput || ""),
         },
       }));
     }, []),
 
-    // Git 输出：追加到日志
+    // Git 输出：追加到日志（最新日志显示在最上方）
     onGitOutput: useCallback((output: GitOutput) => {
       const { cardId, output: outputText } = output;
       setProjectLogs((prev) => ({
         ...prev,
         [cardId]: {
           ...prev[cardId],
-          gitOutput: (prev[cardId]?.gitOutput || "") + `[${formatTimestamp()}] ${outputText}\n`,
+          gitOutput: `[${formatTimestamp()}] ${outputText}\n` + (prev[cardId]?.gitOutput || ""),
         },
       }));
     }, []),
@@ -278,7 +279,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         ...prev,
         [cardId]: {
           ...prev[cardId],
-          fileOutput: (prev[cardId]?.fileOutput || "") + `[${formatTimestamp()}] ${operationIcon} ${message}\n\n`,
+          fileOutput: `[${formatTimestamp()}] ${operationIcon} ${message}\n\n` + (prev[cardId]?.fileOutput || ""),
         },
       }));
     }, []),
@@ -659,13 +660,13 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         const updatedCards = [...cards, ...importedProjects];
         setCards(updatedCards);
         await projectService.saveConfig(updatedCards, importedWebsiteProjects);
-        let message = `成功导入 ${importedProjects.length} 个部署项目`;
+        let msg = `成功导入 ${importedProjects.length} 个部署项目`;
         if (importedWebsiteProjects.length > 0) {
-          message += ` 和 ${importedWebsiteProjects.length} 个网站项目`;
+          msg += ` 和 ${importedWebsiteProjects.length} 个网站项目`;
         }
-        alert(message);
+        message.success(msg);
       } catch (err) {
-        alert(`导入失败: ${err}`);
+        message.error(`导入失败: ${err}`);
       }
     };
     input.click();
@@ -681,7 +682,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       await projectService.exportConfig(cards, websiteProjects);
     } catch (err) {
       console.error("导出失败:", err);
-      alert(`导出失败: ${err}`);
+      message.error(`导出失败: ${err}`);
     }
   };
 

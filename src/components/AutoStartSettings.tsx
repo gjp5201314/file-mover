@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { message } from "./messageApi";
 import "./AutoStartSettings.css";
 
 interface AutoStartSettingsProps {
@@ -10,7 +11,6 @@ export default function AutoStartSettings({ initialExpanded = false }: AutoStart
   const [isExpanded, setIsExpanded] = useState(initialExpanded);
   const [autoStartEnabled, setAutoStartEnabled] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,16 +41,13 @@ export default function AutoStartSettings({ initialExpanded = false }: AutoStart
 
   const handleToggle = async (checked: boolean) => {
     setLoading(true);
-    setMessage("");
 
     try {
       await invoke("set_autostart", { enabled: checked });
       setAutoStartEnabled(checked);
-      setMessage(checked ? "已开启开机启动" : "已关闭开机启动");
-      setTimeout(() => setMessage(""), 3000);
+      message.success(checked ? "已开启开机启动" : "已关闭开机启动");
     } catch (err) {
-      setMessage(`设置失败: ${err}`);
-      setTimeout(() => setMessage(""), 5000);
+      message.error(`设置失败: ${err}`);
     } finally {
       setLoading(false);
     }
@@ -98,12 +95,6 @@ export default function AutoStartSettings({ initialExpanded = false }: AutoStart
               开启后，应用将在 Windows 启动时自动运行
             </div>
           </div>
-
-          {message && (
-            <div className={`auto-start-message ${message.includes("失败") ? "error" : "success"}`}>
-              {message}
-            </div>
-          )}
         </div>
       )}
     </div>

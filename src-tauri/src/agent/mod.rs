@@ -5,16 +5,13 @@ pub mod providers;
 pub mod secret;
 pub mod tools;
 
-pub use llm::{
-    chat_completion, default_base_url, default_model, system_prompt, tools_to_json_value,
-    AssistantMessage, ChatMessage, ChatResponse,
-};
-pub use providers::{list_providers, match_provider_id, AgentModelPreset, AgentProvider};
+pub use llm::{chat_completion, system_prompt, tools_to_json_value, ChatMessage};
+pub use providers::{list_providers, match_provider_id, AgentProvider};
 pub use secret::{
     clear_all as clear_secrets, get_api_key, get_base_url, get_model, set_api_key, set_base_url,
     set_model,
 };
-pub use tools::{all_tool_defs, execute_tool, ToolCall, ToolDef, ToolResult};
+pub use tools::{all_tool_defs, execute_tool, ToolCall};
 
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};

@@ -18,8 +18,6 @@ use std::time::Duration;
 
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
-const DEFAULT_BASE_URL: &str = "https://api.deepseek.com/v1";
-const DEFAULT_MODEL: &str = "deepseek-chat";
 const REQUEST_TIMEOUT_SECS: u64 = 120;
 
 #[derive(Debug, Clone, Serialize)]
@@ -36,6 +34,7 @@ pub struct ChatMessage {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct ChatResponse {
     pub id: Option<String>,
     pub model: Option<String>,
@@ -44,6 +43,7 @@ pub struct ChatResponse {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct ChatChoice {
     pub index: u32,
     pub message: AssistantMessage,
@@ -136,15 +136,6 @@ pub fn system_prompt() -> String {
          ",
         now
     )
-}
-
-/// 获取 LLM 默认端点
-pub fn default_base_url() -> &'static str {
-    DEFAULT_BASE_URL
-}
-
-pub fn default_model() -> &'static str {
-    DEFAULT_MODEL
 }
 
 /// 把 tools::ToolDef 转成 OpenAI 协议所需的 Value

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { message } from "./messageApi";
 import "./SettingsDrawer.css";
 
 interface ChangelogEntry {
@@ -56,8 +57,8 @@ export default function SettingsDrawer({ isOpen, onClose, onImport, onExport, ha
   const [autoStartEnabled, setAutoStartEnabled] = useState(false);
   const [trayEnabled, setTrayEnabled] = useState(false);
   const [stickyHeaderEnabled, setStickyHeaderEnabled] = useState(true);
+  const [aiBubbleEnabled, setAiBubbleEnabled] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
   const [showChangelog, setShowChangelog] = useState(false);
   const [hostsLoading, setHostsLoading] = useState(false);
 
@@ -66,6 +67,7 @@ export default function SettingsDrawer({ isOpen, onClose, onImport, onExport, ha
       loadAutoStartStatus();
       loadTrayStatus();
       loadStickyHeaderStatus();
+      loadAiBubbleStatus();
     }
   }, [isOpen]);
 
@@ -104,6 +106,12 @@ export default function SettingsDrawer({ isOpen, onClose, onImport, onExport, ha
     setStickyHeaderEnabled(v === null ? true : v === "true");
   };
 
+  /** 读取 AI 助手悬浮气泡设置（未设置过时默认开启） */
+  const loadAiBubbleStatus = () => {
+    const v = localStorage.getItem("app.ai-bubble.enabled");
+    setAiBubbleEnabled(v === null ? true : v === "true");
+  };
+
   const handleStickyHeaderToggle = (checked: boolean) => {
     localStorage.setItem("app.sticky-header.enabled", String(checked));
     setStickyHeaderEnabled(checked);
@@ -111,22 +119,28 @@ export default function SettingsDrawer({ isOpen, onClose, onImport, onExport, ha
     window.dispatchEvent(
       new CustomEvent("sticky-header-change", { detail: checked })
     );
-    setMessage(checked ? "已开启顶部吸顶效果" : "已关闭顶部吸顶效果");
-    setTimeout(() => setMessage(""), 3000);
+    message.success(checked ? "已开启顶部吸顶效果" : "已关闭顶部吸顶效果");
+  };
+
+  const handleAiBubbleToggle = (checked: boolean) => {
+    localStorage.setItem("app.ai-bubble.enabled", String(checked));
+    setAiBubbleEnabled(checked);
+    // 通知 AiAssistant 组件实时更新
+    window.dispatchEvent(
+      new CustomEvent("ai-bubble-change", { detail: checked })
+    );
+    message.success(checked ? "已开启 AI 助手悬浮气泡" : "已关闭 AI 助手悬浮气泡");
   };
 
   const handleToggle = async (checked: boolean) => {
     setLoading(true);
-    setMessage("");
 
     try {
       await invoke("set_autostart", { enabled: checked });
       setAutoStartEnabled(checked);
-      setMessage(checked ? "已开启开机启动" : "已关闭开机启动");
-      setTimeout(() => setMessage(""), 3000);
+      message.success(checked ? "已开启开机启动" : "已关闭开机启动");
     } catch (err) {
-      setMessage(`设置失败: ${err}`);
-      setTimeout(() => setMessage(""), 5000);
+      message.error(`设置失败: ${err}`);
     } finally {
       setLoading(false);
     }
@@ -134,16 +148,13 @@ export default function SettingsDrawer({ isOpen, onClose, onImport, onExport, ha
 
   const handleTrayToggle = async (checked: boolean) => {
     setLoading(true);
-    setMessage("");
 
     try {
       await invoke("set_tray_setting", { enabled: checked });
       setTrayEnabled(checked);
-      setMessage(checked ? "已开启最小化到托盘" : "已关闭最小化到托盘");
-      setTimeout(() => setMessage(""), 3000);
+      message.success(checked ? "已开启最小化到托盘" : "已关闭最小化到托盘");
     } catch (err) {
-      setMessage(`设置失败: ${err}`);
-      setTimeout(() => setMessage(""), 5000);
+      message.error(`设置失败: ${err}`);
     } finally {
       setLoading(false);
     }
@@ -239,12 +250,6 @@ export default function SettingsDrawer({ isOpen, onClose, onImport, onExport, ha
                 </label>
               </div>
             </div>
-
-            {message && (
-              <div className={`auto-start-message ${message.includes("失败") ? "error" : "success"}`}>
-                {message}
-              </div>
-            )}
           </div>
 
           <div className="settings-section">
@@ -287,6 +292,22 @@ export default function SettingsDrawer({ isOpen, onClose, onImport, onExport, ha
 
           <div className="settings-section">
             <h3 className="section-title">AI 助手</h3>
+            <div className="settings-item">
+              <div className="switch-row">
+                <div className="switch-info">
+                  <span className="switch-label">显示悬浮气泡</span>
+                  <span className="switch-desc">关闭后，右下角的 AI 助手悬浮入口将不再显示</span>
+                </div>
+                <label className="switch">
+                  <input
+                    type="checkbox"
+                    checked={aiBubbleEnabled}
+                    onChange={(e) => handleAiBubbleToggle(e.target.checked)}
+                  />
+                  <span className="slider"></span>
+                </label>
+              </div>
+            </div>
             <p className="ai-section-desc">
               AI 助手配置已迁出到独立抽屉。打开右下角悬浮气泡，点右上角 <b>⚙</b> 即可配置服务方 / API Key / 模型。
             </p>
