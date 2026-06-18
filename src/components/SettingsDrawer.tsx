@@ -11,11 +11,17 @@ interface ChangelogEntry {
 }
 
 const changelog: ChangelogEntry[] = [
+  { version: "1.5.2", date: "2026-06-18", type: "新增", content: "全局 Message 弹窗组件：新增 Message 组件与 messageApi 工具函数，统一应用内提示样式与调用入口" },
+  { version: "1.5.2", date: "2026-06-18", type: "新增", content: "AI 助手悬浮气泡开关：设置 → AI 助手 中可一键开启/关闭右下角悬浮气泡入口" },
+  { version: "1.5.2", date: "2026-06-18", type: "重构", content: "统一弹窗组件：移除各页面内联的临时提示样式与状态，将 Alert / 内联提示统一替换为 message 调用" },
+  { version: "1.5.2", date: "2026-06-18", type: "优化", content: "Header 布局：优化滚动监听逻辑与全局布局样式" },
+  { version: "1.5.2", date: "2026-06-18", type: "重构", content: "Rust 代码：清理无用导入与未使用代码" },
+  { version: "1.5.2", date: "2026-06-12", type: "优化", content: "忽略文件：整理并补充 .gitignore 规则，忽略常见开发相关文件与目录" },
+  { version: "1.5.1", date: "2026-06-11", type: "新增", content: "AI 服务方切换：内置 DeepSeek / 通义千问（Qwen） / 自定义 三个 provider，可一键切换并自动填充端点与模型" },
+  { version: "1.5.1", date: "2026-06-11", type: "新增", content: "Qwen 模型快捷选择：Qwen Turbo / Plus / Max / Long / Coder Plus 一键应用，并支持自定义其他模型" },
   { version: "1.5.0", date: "2026-06-11", type: "新增", content: "AI 助手（Agent）：支持通过自然语言控制项目、查询天气、执行 Git 操作等；接入 DeepSeek LLM 并支持 Function Calling" },
   { version: "1.5.0", date: "2026-06-11", type: "新增", content: "AI 设置：API Key 使用 Windows DPAPI 加密本地存储，可在设置面板中配置 / 测试 / 清除" },
   { version: "1.5.0", date: "2026-06-11", type: "新增", content: "AI 聊天面板：右下角悬浮气泡 + 侧边聊天面板，支持多轮对话、工具调用步骤展示、历史记录持久化" },
-  { version: "1.5.1", date: "2026-06-11", type: "新增", content: "AI 服务方切换：内置 DeepSeek / 通义千问（Qwen） / 自定义 三个 provider，可一键切换并自动填充端点与模型" },
-  { version: "1.5.1", date: "2026-06-11", type: "新增", content: "Qwen 模型快捷选择：Qwen Turbo / Plus / Max / Long / Coder Plus 一键应用，并支持自定义其他模型" },
   { version: "1.4.0", date: "2026-06-01", type: "新增", content: "项目拖拽排序：支持拖拽调整项目列表顺序" },
   { version: "1.4.0", date: "2026-06-01", type: "新增", content: "顶部吸顶栏：可配置的顶部吸顶导航栏，支持滚动毛玻璃效果" },
   { version: "1.4.0", date: "2026-06-01", type: "优化", content: "项目标签页：支持自动溢出折叠与搜索下拉菜单" },
