@@ -102,3 +102,102 @@
   text-align: center;
   padding: 16px;
 }
+
+/* ========== Git 日志可折叠条目 ========== */
+.git-entry-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.git-entry {
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.git-entry.expanded {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.git-entry-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  background: transparent;
+  border: none;
+  color: var(--color-log-output);
+  cursor: pointer;
+  font-family: "Consolas", monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.git-entry-header:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.git-entry-toggle {
+  flex-shrink: 0;
+  width: 10px;
+  color: var(--color-text-tertiary);
+  font-size: 9px;
+}
+
+.git-entry-time {
+  flex-shrink: 0;
+  color: var(--color-text-tertiary);
+  font-size: 10px;
+}
+
+.git-entry-command {
+  flex-shrink: 0;
+  color: #7dd3fc;
+  font-weight: 600;
+}
+
+.git-entry-summary {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.55);
+  margin-left: 4px;
+}
+
+.git-entry-content {
+  margin: 0;
+  padding: 6px 10px 8px 24px;
+  color: var(--color-log-output);
+  font-family: "Consolas", monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+  background: rgba(0, 0, 0, 0.18);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.git-entry-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.git-entry-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+.git-entry-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}

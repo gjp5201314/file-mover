@@ -184,6 +184,9 @@ pub struct FileOperationLog {
 #[serde(rename_all = "camelCase")]
 pub struct GitOutput {
     pub card_id: String,
+    /// Git 命令名称，例如 "git pull" / "git add" / "git commit" / "git push"
+    /// 前端用此字段对日志进行可折叠分组展示
+    pub command: String,
     pub output: String,
 }
 
@@ -304,6 +307,7 @@ async fn git_pull(
     let pull_err = String::from_utf8_lossy(&git_pull_output.stderr).to_string();
     let _ = app.emit("git-output", GitOutput {
         card_id: card_id.clone(),
+        command: "git pull".to_string(),
         output: format!("git pull:\n{}{}", pull_str, pull_err),
     });
 
@@ -355,20 +359,16 @@ async fn copy_and_prepare(
     if !target_path.exists() {
         fs::create_dir_all(target_path).map_err(|e| e.to_string())?;
     }
-    
+
+    // 任务概览：源/目标/操作模式一次说清，后续日志不再重复路径与模式
+    let operation_desc = if move_mode == "cut" { String::from("移动") } else { String::from("复制") };
     let _ = app.emit("file-operation-log", FileOperationLog {
         card_id: card_id.clone(),
         operation: "info".to_string(),
-        message: format!("📋 开始文件部署任务\n源目录: {}\n目标目录: {}", source, target),
+        message: format!("📋 部署任务: {} → {}\n📦 模式: {}", source, target, operation_desc),
     });
 
     if auto_pull {
-        let _ = app.emit("file-operation-log", FileOperationLog {
-            card_id: card_id.clone(),
-            operation: "info".to_string(),
-            message: "🔄 开始执行 git pull...".to_string(),
-        });
-
         {
             let state = state.lock().map_err(|e| e.to_string())?;
             check_cancelled(&card_id, &state)?;
@@ -389,6 +389,7 @@ async fn copy_and_prepare(
         let pull_err = String::from_utf8_lossy(&git_pull_output.stderr).to_string();
         let _ = app.emit("git-output", GitOutput {
             card_id: card_id.clone(),
+            command: "git pull".to_string(),
             output: format!("git pull:\n{}{}", pull_str, pull_err),
         });
 
@@ -402,12 +403,14 @@ async fn copy_and_prepare(
         check_cancelled(&card_id, &state)?;
     }
 
+    let is_cut = move_mode == "cut";
+
     let clear_mode_desc: String = match clear_target_mode.as_str() {
         "all" => {
             let _ = app.emit("file-operation-log", FileOperationLog {
                 card_id: card_id.clone(),
                 operation: "clear".to_string(),
-                message: "🗑️ 清空模式: 清空整个目标目录".to_string(),
+                message: "🗑️ 清空: 整个目标目录".to_string(),
             });
             remove_dir_all_recursive(target_path)?;
             String::from("清空整个目录")
@@ -417,7 +420,7 @@ async fn copy_and_prepare(
                 let _ = app.emit("file-operation-log", FileOperationLog {
                     card_id: card_id.clone(),
                     operation: "clear".to_string(),
-                    message: "🗑️ 清空模式: 不清空".to_string(),
+                    message: "🗑️ 清空: 不清空".to_string(),
                 });
                 String::from("不清空")
             } else {
@@ -425,7 +428,7 @@ async fn copy_and_prepare(
                 let _ = app.emit("file-operation-log", FileOperationLog {
                     card_id: card_id.clone(),
                     operation: "clear".to_string(),
-                    message: format!("🗑️ 清空模式: 清空指定文件夹 [{}]", folders_str),
+                    message: format!("🗑️ 清空: 指定文件夹 [{}]", folders_str),
                 });
                 for folder in &clear_target_folders {
                     {
@@ -445,7 +448,7 @@ async fn copy_and_prepare(
             let _ = app.emit("file-operation-log", FileOperationLog {
                 card_id: card_id.clone(),
                 operation: "clear".to_string(),
-                message: "🗑️ 清空模式: 不清空".to_string(),
+                message: "🗑️ 清空: 不清空".to_string(),
             });
             String::from("不清空")
         }
@@ -456,17 +459,14 @@ async fn copy_and_prepare(
         check_cancelled(&card_id, &state)?;
     }
 
-    let is_cut = move_mode == "cut";
-    let operation_desc = if is_cut { String::from("移动") } else { String::from("复制") };
-
     let _ = app.emit("file-operation-log", FileOperationLog {
         card_id: card_id.clone(),
         operation: "info".to_string(),
-        message: format!("📦 操作模式: {}\n🎯 清空方式: {}\n📂 开始处理文件...", operation_desc, clear_mode_desc),
+        message: format!("📂 开始处理文件... (清空方式: {})", clear_mode_desc),
     });
 
     copy_dir_recursive(source_path, target_path, is_cut)?;
-    
+
     SecurityAuditEvent::new(
         "FILE_OPERATION_COMPLETE",
         &format!(
@@ -479,8 +479,7 @@ async fn copy_and_prepare(
     let _ = app.emit("file-operation-log", FileOperationLog {
         card_id: card_id.clone(),
         operation: "complete".to_string(),
-        message: format!("✅ {} 操作完成!\n📁 源目录: {}\n📁 目标目录: {}\n🎯 清空方式: {}\n🔄 操作模式: {}", 
-            operation_desc, source, target, clear_mode_desc, operation_desc),
+        message: format!("✅ {} 操作完成", operation_desc),
     });
 
     let _ = app.emit("copy-progress", CopyProgress {
@@ -576,6 +575,7 @@ async fn git_commit_push(
     let add_err = String::from_utf8_lossy(&git_add_output.stderr).to_string();
     let _ = app.emit("git-output", GitOutput {
         card_id: card_id.clone(),
+        command: "git add".to_string(),
         output: format!("git add:\n{}{}", add_str, add_err),
     });
 
@@ -598,6 +598,7 @@ async fn git_commit_push(
     let commit_err = String::from_utf8_lossy(&git_commit_output.stderr).to_string();
     let _ = app.emit("git-output", GitOutput {
         card_id: card_id.clone(),
+        command: "git commit".to_string(),
         output: format!("git commit:\n{}{}", commit_str, commit_err),
     });
 
@@ -623,6 +624,7 @@ async fn git_commit_push(
     let push_err = String::from_utf8_lossy(&git_push_output.stderr).to_string();
     let _ = app.emit("git-output", GitOutput {
         card_id: card_id.clone(),
+        command: "git push".to_string(),
         output: format!("git push:\n{}{}", push_str, push_err),
     });
 
@@ -1097,6 +1099,13 @@ fn get_autostart() -> Result<bool, String> {
 #[tauri::command]
 fn set_autostart(enabled: bool) -> Result<(), String> {
     if enabled {
+        // 调试版本注册的开机启动会在开机时弹出 cmd 窗口，
+        // 且 webview 加载的 dev server 在开机时未运行，导致应用空白。
+        // 因此禁止在 debug 构建中启用开机自启，必须使用 release 版本。
+        if cfg!(debug_assertions) {
+            return Err("调试版本不支持开机启动，请使用发布版本".to_string());
+        }
+
         let exe_path = std::env::current_exe()
             .map_err(|e| format!("获取程序路径失败: {}", e))?;
         

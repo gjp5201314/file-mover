@@ -117,7 +117,7 @@ function AppContent() {
           {/* 日志面板 */}
           <ProjectSidebar
             fileOutput={projectLogs[activeCard.id]?.fileOutput || ""}
-            gitOutput={projectLogs[activeCard.id]?.gitOutput || ""}
+            gitEntries={projectLogs[activeCard.id]?.gitEntries || []}
             onClearFileOutput={() => clearProjectLogs(activeCard.id, 'file')}
             onClearGitOutput={() => clearProjectLogs(activeCard.id, 'git')}
           />

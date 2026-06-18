@@ -30,14 +30,31 @@ import { message } from "../components/messageApi";
 import { useFileOperationEvents, CopyProgress, GitOutput, FileOperationLog, WatchTrigger } from "../hooks/useFileOperationEvents";
 
 /**
+ * 单条 Git 日志条目
+ * @interface GitLogEntry
+ * @description 每条对应一次后端发来的 git-output 事件。
+ * 是否展开是 UI 关注点，由 ProjectSidebar 在本地维护，Context 只保存原始数据。
+ */
+export interface GitLogEntry {
+  /** 唯一 ID，用于 React key 与折叠状态匹配 */
+  id: string;
+  /** 事件发生时间，格式 YYYY-MM-DD HH:mm:ss */
+  timestamp: string;
+  /** Git 命令名，例如 "git pull" */
+  command: string;
+  /** 命令的完整输出 */
+  content: string;
+}
+
+/**
  * 项目日志数据
  * @interface ProjectLogs
  * @property fileOutput - 文件操作日志（复制、清空等）
- * @property gitOutput - Git 操作日志（pull、commit、push）
+ * @property gitEntries - Git 操作日志条目列表（按时间倒序，最新在前）
  */
 interface ProjectLogs {
   fileOutput: string;
-  gitOutput: string;
+  gitEntries: GitLogEntry[];
 }
 
 /**
@@ -255,16 +272,26 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       }));
     }, []),
 
-    // Git 输出：追加到日志（最新日志显示在最上方）
+    // Git 输出：作为一条记录插入到列表顶部
+    // 是否展开是 UI 关注点，由 ProjectSidebar 在本地维护
     onGitOutput: useCallback((output: GitOutput) => {
-      const { cardId, output: outputText } = output;
-      setProjectLogs((prev) => ({
-        ...prev,
-        [cardId]: {
-          ...prev[cardId],
-          gitOutput: `[${formatTimestamp()}] ${outputText}\n` + (prev[cardId]?.gitOutput || ""),
-        },
-      }));
+      const { cardId, command, output: outputText } = output;
+      setProjectLogs((prev) => {
+        const existing = prev[cardId]?.gitEntries || [];
+        const newEntry: GitLogEntry = {
+          id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          timestamp: formatTimestamp(),
+          command,
+          content: outputText,
+        };
+        return {
+          ...prev,
+          [cardId]: {
+            ...prev[cardId],
+            gitEntries: [newEntry, ...existing],
+          },
+        };
+      });
     }, []),
 
     // 文件操作日志：清空、完成等状态
@@ -573,7 +600,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       [cardId]: {
         fileOutput: logType === 'git' ? (prev[cardId]?.fileOutput || "") : "",
-        gitOutput: logType === 'file' ? (prev[cardId]?.gitOutput || "") : "",
+        gitEntries: logType === 'file' ? (prev[cardId]?.gitEntries || []) : [],
       },
     }));
   };

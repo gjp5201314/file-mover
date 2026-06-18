@@ -38,10 +38,13 @@ export interface CopyProgress {
  * Git 命令输出数据
  * @interface GitOutput
  * @property cardId - 关联的项目卡片 ID
+ * @property command - Git 命令名（如 "git pull" / "git add" / "git commit" / "git push"），
+ *                    前端据此把同一条命令的输出折叠成一组可展开的记录
  * @property output - Git 命令的输出内容
  */
 export interface GitOutput {
   cardId: string;
+  command: string;
   output: string;
 }
 
@@ -106,61 +109,64 @@ export interface UseFileOperationEventsOptions {
  * ```
  */
 export function useFileOperationEvents(options: UseFileOperationEventsOptions) {
-  // 存储所有取消订阅函数，用于组件卸载时清理
-  const unlistenersRef = useRef<UnlistenFn[]>([]);
   // 缓存最新的 options，解决回调中访问旧状态的问题
   // 这样可以确保事件处理器始终使用最新的回调函数
   const optionsRef = useRef(options);
   optionsRef.current = options;
 
   useEffect(() => {
-    const setupListeners = async () => {
-      // 清理旧的监听器，防止重复订阅
-      unlistenersRef.current.forEach((fn) => fn());
-      unlistenersRef.current = [];
+    // 用本地变量而不是 ref 来追踪本次 effect 的订阅，
+    // 避免在 React StrictMode 下双调用 effect 时与上一份的 cleanup 互相覆盖。
+    let cancelled = false;
+    const unlisteners: UnlistenFn[] = [];
 
-      // 订阅文件复制进度事件
-      // 触发频率：每秒多次，取决于后端实现
-      const unlistenProgress = listen<CopyProgress>("copy-progress", (event) => {
-        optionsRef.current.onProgress?.(event.payload);
+    /**
+     * 注册单个 Tauri 事件监听器。
+     * @description
+     * - listener 内部用闭包检查 `cancelled`，StrictMode 下被作废的 effect
+     *   即使在 await 之后才完成注册，也不会处理任何事件。
+     * - 注册完成后再判断一次 `cancelled`：若已被 cleanup，则立即反注册；
+     *   否则将 unlisten 推入待清理列表。
+     */
+    const subscribe = async <T>(
+      event: string,
+      handler: (payload: T) => void,
+    ): Promise<void> => {
+      const unlisten = await listen<T>(event, (e) => {
+        if (cancelled) return;
+        handler(e.payload);
       });
-      unlistenProgress.then((fn) => unlistenersRef.current.push(fn));
-
-      // 订阅 Git 命令输出事件
-      // 用于实时显示 git pull/push 的执行结果
-      const unlistenGitOutput = listen<GitOutput>("git-output", (event) => {
-        optionsRef.current.onGitOutput?.(event.payload);
-      });
-      unlistenGitOutput.then((fn) => unlistenersRef.current.push(fn));
-
-      // 订阅文件操作日志事件
-      // 用于显示清空目录、完成处理等关键状态
-      const unlistenFileOperationLog = listen<FileOperationLog>("file-operation-log", (event) => {
-        optionsRef.current.onFileOperation?.(event.payload);
-      });
-      unlistenFileOperationLog.then((fn) => unlistenersRef.current.push(fn));
-
-      // 订阅错误事件
-      // 统一处理来自后端的错误信息
-      const unlistenError = listen<string>("error", (event) => {
-        optionsRef.current.onError?.(event.payload);
-      });
-      unlistenError.then((fn) => unlistenersRef.current.push(fn));
-
-      // 订阅监听触发事件
-      // 后端检测到源目录文件变化后（去抖 3 秒）发送
-      const unlistenWatchTrigger = listen<WatchTrigger>("watch-trigger", (event) => {
-        optionsRef.current.onWatchTrigger?.(event.payload);
-      });
-      unlistenWatchTrigger.then((fn) => unlistenersRef.current.push(fn));
+      if (cancelled) {
+        unlisten();
+      } else {
+        unlisteners.push(unlisten);
+      }
     };
 
-    setupListeners();
+    // 并行订阅所有事件，缩短 setup 耗时
+    void Promise.all([
+      subscribe<CopyProgress>("copy-progress", (payload) => {
+        optionsRef.current.onProgress?.(payload);
+      }),
+      subscribe<GitOutput>("git-output", (payload) => {
+        optionsRef.current.onGitOutput?.(payload);
+      }),
+      subscribe<FileOperationLog>("file-operation-log", (payload) => {
+        optionsRef.current.onFileOperation?.(payload);
+      }),
+      subscribe<string>("error", (payload) => {
+        optionsRef.current.onError?.(payload);
+      }),
+      subscribe<WatchTrigger>("watch-trigger", (payload) => {
+        optionsRef.current.onWatchTrigger?.(payload);
+      }),
+    ]);
 
-    // 组件卸载时清理：取消所有事件订阅
+    // 组件卸载或 effect 清理：作废本次订阅，移除已注册的监听器
     return () => {
-      unlistenersRef.current.forEach((fn) => fn());
-      unlistenersRef.current = [];
+      cancelled = true;
+      unlisteners.forEach((fn) => fn());
+      unlisteners.length = 0;
     };
   }, []);
 }
