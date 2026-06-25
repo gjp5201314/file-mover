@@ -4,7 +4,7 @@
 
 ## 📥 下载安装
 
-前往 [**Releases 页面**](https://github.com/YOUR_USERNAME/file-mover/releases/latest) 下载最新版本：
+前往 [**Releases 页面**](https://github.com/gjp5201314/file-mover/releases/latest) 下载最新版本：
 
 | 文件 | 说明 | 大小 |
 |------|------|------|
