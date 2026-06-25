@@ -164,6 +164,11 @@
   font-weight: 600;
 }
 
+/* 文件操作日志的 operation 标签（与 git command 区分颜色） */
+.git-entry-command.file-entry-operation {
+  color: #fcd34d;
+}
+
 .git-entry-summary {
   flex: 1;
   min-width: 0;

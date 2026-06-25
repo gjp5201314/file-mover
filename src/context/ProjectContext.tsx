@@ -47,13 +47,37 @@ export interface GitLogEntry {
 }
 
 /**
+ * 单条文件操作日志条目
+ * @interface FileLogEntry
+ * @description 每条对应一次进度更新或一次文件操作状态事件。
+ * 是否展开是 UI 关注点，由 ProjectSidebar 在本地维护，Context 只保存原始数据。
+ */
+export interface FileLogEntry {
+  /** 唯一 ID，用于 React key 与折叠状态匹配 */
+  id: string;
+  /** 事件发生时间，格式 YYYY-MM-DD HH:mm:ss */
+  timestamp: string;
+  /** 操作类型：
+   *  - "progress"：文件复制进度
+   *  - "clear"：清空目标目录
+   *  - "complete"：操作完成
+   *  - 其它后端自定义状态
+   */
+  operation: string;
+  /** 用于标题/摘要的简短描述（如文件名、操作消息） */
+  summary: string;
+  /** 条目的完整内容（展开后展示） */
+  content: string;
+}
+
+/**
  * 项目日志数据
  * @interface ProjectLogs
- * @property fileOutput - 文件操作日志（复制、清空等）
+ * @property fileEntries - 文件操作日志条目列表（最新在前）
  * @property gitEntries - Git 操作日志条目列表（按时间倒序，最新在前）
  */
 interface ProjectLogs {
-  fileOutput: string;
+  fileEntries: FileLogEntry[];
   gitEntries: GitLogEntry[];
 }
 
@@ -261,15 +285,25 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         )
       );
 
-      // 追加文件操作日志（最新日志显示在最上方）
-      // 格式：[时间戳] [当前/总数] 文件名
-      setProjectLogs((prev) => ({
-        ...prev,
-        [cardId]: {
-          ...prev[cardId],
-          fileOutput: `[${formatTimestamp()}] [${current}/${total}] ${currentFile}\n` + (prev[cardId]?.fileOutput || ""),
-        },
-      }));
+      // 追加文件操作日志条目（最新日志显示在最上方）
+      setProjectLogs((prev) => {
+        const existing = prev[cardId]?.fileEntries || [];
+        const summary = currentFile.length > 60 ? currentFile.slice(0, 60) + "…" : currentFile;
+        const newEntry: FileLogEntry = {
+          id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          timestamp: formatTimestamp(),
+          operation: "progress",
+          summary: `[${current}/${total}] ${summary}`,
+          content: `[${formatTimestamp()}] [${current}/${total}] ${currentFile}`,
+        };
+        return {
+          ...prev,
+          [cardId]: {
+            ...prev[cardId],
+            fileEntries: [newEntry, ...existing],
+          },
+        };
+      });
     }, []),
 
     // Git 输出：作为一条记录插入到列表顶部
@@ -302,13 +336,24 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       // complete: 对勾（完成）
       // 其他: 信息图标
       const operationIcon = operation === "clear" ? "🗑️" : operation === "complete" ? "✅" : "ℹ️";
-      setProjectLogs((prev) => ({
-        ...prev,
-        [cardId]: {
-          ...prev[cardId],
-          fileOutput: `[${formatTimestamp()}] ${operationIcon} ${message}\n\n` + (prev[cardId]?.fileOutput || ""),
-        },
-      }));
+      setProjectLogs((prev) => {
+        const existing = prev[cardId]?.fileEntries || [];
+        const summary = message.length > 60 ? message.slice(0, 60) + "…" : message;
+        const newEntry: FileLogEntry = {
+          id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          timestamp: formatTimestamp(),
+          operation,
+          summary: `${operationIcon} ${summary}`,
+          content: `[${formatTimestamp()}] ${operationIcon} ${message}`,
+        };
+        return {
+          ...prev,
+          [cardId]: {
+            ...prev[cardId],
+            fileEntries: [newEntry, ...existing],
+          },
+        };
+      });
     }, []),
 
     // 错误处理
@@ -599,7 +644,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     setProjectLogs((prev) => ({
       ...prev,
       [cardId]: {
-        fileOutput: logType === 'git' ? (prev[cardId]?.fileOutput || "") : "",
+        fileEntries: logType === 'git' ? (prev[cardId]?.fileEntries || []) : [],
         gitEntries: logType === 'file' ? (prev[cardId]?.gitEntries || []) : [],
       },
     }));

@@ -4,6 +4,9 @@ version = "1.0.0"
 description = "A simple file mover tool"
 authors = ["you"]
 edition = "2021"
+# 使用 rustc 1.84 工具链：rustc 1.95 在 Windows 上对 build script
+# 调用 rustc 探测存在 std 库 bug，会导致 quote/proc-macro2 等 panic
+rust-toolchain = "1.84.0"
 
 [build-dependencies]
 tauri-build = { version = "2.0", features = [] }
@@ -24,13 +27,15 @@ notify = "7"
 # 3. opt-level = 3:保持运行性能
 # 4. strip = true:剥离符号表,减小最终体积
 # 5. panic = "abort":移除 unwind 表,减小编译与体积
+# 6. 不在 release 启用 incremental:incremental 与 LTO 一起会在 Windows 上
+#    因临时 pre-lto bitcode 文件被锁/被扫描而出现 os error 5 (拒绝访问)
 [profile.release]
 codegen-units = 16
 lto = "thin"
 opt-level = 3
 strip = true
 panic = "abort"
-incremental = true
+incremental = false
 
 # Dev 模式也启用增量编译
 [profile.dev]
