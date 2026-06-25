@@ -2,6 +2,17 @@
 
 一个基于 Tauri + React 构建的桌面应用，用于简化前端文件部署流程。
 
+## 📥 下载安装
+
+前往 [**Releases 页面**](https://github.com/YOUR_USERNAME/file-mover/releases/latest) 下载最新版本：
+
+| 文件 | 说明 | 大小 |
+|------|------|------|
+| `file-mover.exe` | 绿色版（免安装，双击即用） | ~10 MB |
+
+> **使用方法**：下载后双击 `file-mover.exe` 即可运行，无需安装。
+> 如被 Windows Defender / SmartScreen 拦截，选择"更多信息 → 仍要运行"即可。
+
 ## 技术栈
 
 - **前端框架**: React 18 + TypeScript
